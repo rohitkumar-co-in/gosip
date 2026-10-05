@@ -48,10 +48,10 @@ services:
     environment:
       GOSIP_URL: http://gosip:8080
       # Coolify injects the application's .env into each service. Override
-      # these with null (empty strings are overridden by Coolify's parser).
-      # The PBX uses SIP trunk credentials, not the Twilio API.
-      TWILIO_ACCOUNT_SID: null
-      TWILIO_AUTH_TOKEN: null
+      # Empty literals are filled from Coolify's saved values; null inherits
+      # the app's .env. An empty alias reliably excludes API credentials.
+      TWILIO_ACCOUNT_SID: ${GOSIP_PBX_UNUSED_API_CREDENTIAL:-}
+      TWILIO_AUTH_TOKEN: ${GOSIP_PBX_UNUSED_API_CREDENTIAL:-}
       GOSIP_PBX_SECRET: ${GOSIP_PBX_SECRET}
       GOSIP_PBX_TRUNK_USER: ${GOSIP_PBX_TRUNK_USER}
       GOSIP_PBX_TRUNK_PASSWORD: ${GOSIP_PBX_TRUNK_PASSWORD}
