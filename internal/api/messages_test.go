@@ -7,10 +7,20 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/rohitkumar-co-in/gosip/internal/models"
 )
+
+func TestMessageResponsePreservesTimestampInstant(t *testing.T) {
+	created := time.Date(2026, 10, 6, 2, 46, 11, 0, time.FixedZone("IST", 19800))
+	response := toMessageResponse(&models.Message{CreatedAt: created})
+	parsed, err := time.Parse(time.RFC3339, response.CreatedAt)
+	if err != nil || !parsed.Equal(created) {
+		t.Fatalf("Timestamp changed its instant: %q", response.CreatedAt)
+	}
+}
 
 func TestConversationEncodedInternationalNumber(t *testing.T) {
 	setup := setupTestAPI(t)

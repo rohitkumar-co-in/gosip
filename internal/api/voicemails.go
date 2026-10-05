@@ -249,6 +249,6 @@ func toVoicemailResponse(v *models.Voicemail) *VoicemailResponse {
 		RecordingURL:   v.AudioURL,
 		TranscriptText: v.Transcript,
 		IsRead:         v.IsRead,
-		CreatedAt:      v.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		CreatedAt:      v.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
 	}
 }

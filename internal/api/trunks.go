@@ -73,10 +73,10 @@ func toTrunkResponse(trunk *models.Trunk) *TrunkResponse {
 		CnamLookupEnabled: trunk.CnamLookupEnabled,
 	}
 	if !trunk.CreatedAt.IsZero() {
-		resp.CreatedAt = trunk.CreatedAt.Format("2006-01-02T15:04:05Z")
+		resp.CreatedAt = trunk.CreatedAt.UTC().Format("2006-01-02T15:04:05Z")
 	}
 	if !trunk.UpdatedAt.IsZero() {
-		resp.UpdatedAt = trunk.UpdatedAt.Format("2006-01-02T15:04:05Z")
+		resp.UpdatedAt = trunk.UpdatedAt.UTC().Format("2006-01-02T15:04:05Z")
 	}
 	return resp
 }

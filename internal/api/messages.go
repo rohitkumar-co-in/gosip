@@ -565,7 +565,7 @@ func toMessageResponse(m *models.Message) *MessageResponse {
 		MediaURLs:    mediaURLs,
 		Status:       m.Status,
 		TwilioSID:    m.MessageSID,
-		CreatedAt:    m.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		CreatedAt:    m.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
 	}
 }
 

@@ -73,7 +73,7 @@ func (h *MWIHandler) GetStatus(w http.ResponseWriter, r *http.Request) {
 			OldMessages: state.OldMessages,
 			NewUrgent:   state.NewUrgent,
 			OldUrgent:   state.OldUrgent,
-			LastUpdated: state.LastUpdated.Format("2006-01-02T15:04:05Z"),
+			LastUpdated: state.LastUpdated.UTC().Format("2006-01-02T15:04:05Z"),
 		})
 	}
 
@@ -87,7 +87,7 @@ func (h *MWIHandler) GetStatus(w http.ResponseWriter, r *http.Request) {
 				AOR:        sub.AOR,
 				ContactURI: sub.ContactURI,
 				Expires:    sub.Expires,
-				ExpiresAt:  sub.ExpiresAt.Format("2006-01-02T15:04:05Z"),
+				ExpiresAt:  sub.ExpiresAt.UTC().Format("2006-01-02T15:04:05Z"),
 			})
 		}
 	}

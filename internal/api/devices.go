@@ -326,14 +326,14 @@ func toDeviceResponse(device *models.Device, online bool) *DeviceResponse {
 		Username:           device.Username,
 		DeviceType:         device.DeviceType,
 		RecordingEnabled:   device.RecordingEnabled,
-		CreatedAt:          device.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		CreatedAt:          device.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
 		Online:             online,
 		Vendor:             device.Vendor,
 		Model:              device.Model,
 		ProvisioningStatus: device.ProvisioningStatus,
 	}
 	if device.LastConfigFetch != nil {
-		formatted := device.LastConfigFetch.Format("2006-01-02T15:04:05Z")
+		formatted := device.LastConfigFetch.UTC().Format("2006-01-02T15:04:05Z")
 		resp.LastConfigFetch = &formatted
 	}
 	return resp
