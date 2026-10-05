@@ -30,6 +30,14 @@ var businessMu sync.Mutex
 var businessUsername = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9_-]{2,63}$`)
 var resourceSID = regexp.MustCompile(`^[A-Z]{2}[a-fA-F0-9]{32}$`)
 
+func validBusinessUsername(username string) bool {
+	if !businessUsername.MatchString(username) {
+		return false
+	}
+	name := strings.ToLower(username)
+	return name != "global" && name != "tls" && name != "deny" && !strings.HasPrefix(name, "twilio-")
+}
+
 type BusinessHandler struct {
 	deps    *Dependencies
 	client  *http.Client
@@ -141,8 +149,6 @@ func (h *BusinessHandler) bootstrap(ctx context.Context) error {
 	return nil
 }
 func (h *BusinessHandler) List(w http.ResponseWriter, r *http.Request) {
-	businessMu.Lock()
-	defer businessMu.Unlock()
 	if err := h.bootstrap(r.Context()); err != nil {
 		WriteInternalError(w)
 		return
@@ -202,7 +208,7 @@ func (h *BusinessHandler) credentialList(ctx context.Context) (string, error) {
 			}
 		}
 		if !found {
-			return "", fmt.Errorf("Credential list is not attached to Twilio SIP " + kind)
+			return "", fmt.Errorf("Credential list is not attached to Twilio SIP %s", kind)
 		}
 	}
 	return listSID, nil
@@ -273,6 +279,12 @@ type businessRequest struct {
 }
 
 func (h *BusinessHandler) Provision(w http.ResponseWriter, r *http.Request) {
+	// Provisioning makes several provider requests. Extend only this route's
+	// write deadline; ordinary API requests retain the server's short timeout.
+	http.NewResponseController(w).SetWriteDeadline(time.Now().Add(120 * time.Second))
+	ctx, cancel := context.WithTimeout(r.Context(), 90*time.Second)
+	defer cancel()
+	r = r.WithContext(ctx)
 	businessMu.Lock()
 	defer businessMu.Unlock()
 	var req businessRequest
@@ -304,7 +316,7 @@ func (h *BusinessHandler) Provision(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		req.Username = device.Username
-	} else if !businessUsername.MatchString(req.Username) {
+	} else if !validBusinessUsername(req.Username) {
 		WriteValidationError(w, "Username must start with a letter and contain 3–64 letters, digits, underscores or hyphens", nil)
 		return
 	}
@@ -583,6 +595,10 @@ func (h *BusinessHandler) Audit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *BusinessHandler) Disable(w http.ResponseWriter, r *http.Request) {
+	http.NewResponseController(w).SetWriteDeadline(time.Now().Add(120 * time.Second))
+	ctx, cancel := context.WithTimeout(r.Context(), 90*time.Second)
+	defer cancel()
+	r = r.WithContext(ctx)
 	businessMu.Lock()
 	defer businessMu.Unlock()
 	if err := h.bootstrap(r.Context()); err != nil {

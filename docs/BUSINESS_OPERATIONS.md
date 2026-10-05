@@ -4,6 +4,11 @@ The deployed system uses Asterisk for TLS SIP and SRTP audio, GoSIP for the
 administrator console and SMS bridge, and Twilio for telephone calls and SMS.
 Each SIP user has one registered phone and one assigned Twilio number.
 
+Build images use Node 24 LTS and Go 1.26; the app runtime uses Alpine 3.23.
+Release support references: [Node](https://github.com/nodejs/Release),
+[Go](https://go.dev/doc/go1.26), [Alpine](https://alpinelinux.org/releases/).
+Keep these images and OS packages patched through regular tested deployments.
+
 ## Add or change a phone user
 
 1. Open **SIP Users**, then **Add SIP user**.

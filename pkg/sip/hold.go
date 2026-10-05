@@ -356,7 +356,7 @@ func (h *HoldManager) generateActiveResponseSDP(session *CallSession, offerSDP [
 }
 
 // sendResponse sends a SIP response
-func (h *HoldManager) sendResponse(tx sip.ServerTransaction, req *sip.Request, statusCode sip.StatusCode, reason string) {
+func (h *HoldManager) sendResponse(tx sip.ServerTransaction, req *sip.Request, statusCode int, reason string) {
 	res := sip.NewResponseFromRequest(req, statusCode, reason, nil)
 	if err := tx.Respond(res); err != nil {
 		slog.Error("Failed to send response", "error", err, "status", statusCode)

@@ -1,5 +1,5 @@
 # Build stage for frontend
-FROM node:20-alpine AS frontend-builder
+FROM node:24-alpine3.23 AS frontend-builder
 
 WORKDIR /app/frontend
 
@@ -19,7 +19,7 @@ COPY frontend/ ./
 RUN pnpm build
 
 # Build stage for backend
-FROM golang:1.23-alpine AS backend-builder
+FROM golang:1.26-alpine3.23 AS backend-builder
 
 # Install build dependencies
 RUN apk add --no-cache gcc musl-dev sqlite-dev
@@ -39,10 +39,10 @@ COPY . .
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 
 # Build binary with CGO enabled for SQLite
-RUN CGO_ENABLED=1 GOOS=linux GOMAXPROCS=1 go build -p 1 -ldflags '-linkmode external -extldflags "-static"' -o gosip ./cmd/gosip
+RUN --mount=type=cache,target=/root/.cache/go-build CGO_ENABLED=1 GOOS=linux GOMAXPROCS=1 go build -p 1 -ldflags '-linkmode external -extldflags "-static"' -o gosip ./cmd/gosip
 
 # Final stage
-FROM alpine:3.19
+FROM alpine:3.23
 
 # Install runtime dependencies
 RUN apk add --no-cache ca-certificates tzdata sqlite

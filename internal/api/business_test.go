@@ -176,6 +176,14 @@ func TestBusinessProvisioningLifecycle(t *testing.T) {
 	}
 }
 func TestBusinessConsoleBoundary(t *testing.T) {
+	for _, username := range []string{"twilio-in", "twilio-out-3", "global", "tls", "Twilio-out"} {
+		if validBusinessUsername(username) {
+			t.Fatalf("Internal endpoint name allowed: %s", username)
+		}
+	}
+	if !validBusinessUsername("employee_3") {
+		t.Fatal("Valid employee username rejected")
+	}
 	deps := &Dependencies{Config: &config.Config{PBXURL: "http://pbx", PublicURL: "https://sip.test"}}
 	for _, test := range []struct {
 		role, method, path, origin string

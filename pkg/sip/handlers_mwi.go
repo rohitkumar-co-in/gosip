@@ -17,7 +17,7 @@ func (s *Server) handleSubscribe(req *sip.Request, tx sip.ServerTransaction) {
 	// Get the Event header
 	eventHeader := req.GetHeader("Event")
 	if eventHeader == nil {
-		s.respondToSubscribe(tx, req, sip.StatusCode(489), "Bad Event") // Bad Event
+		s.respondToSubscribe(tx, req, int(489), "Bad Event") // Bad Event
 		return
 	}
 
@@ -30,7 +30,7 @@ func (s *Server) handleSubscribe(req *sip.Request, tx sip.ServerTransaction) {
 		slog.Debug("Unsupported SUBSCRIBE event",
 			slog.String("event", event),
 		)
-		s.respondToSubscribe(tx, req, sip.StatusCode(489), "Bad Event")
+		s.respondToSubscribe(tx, req, int(489), "Bad Event")
 	}
 }
 
@@ -39,25 +39,25 @@ func (s *Server) handleMWISubscribe(ctx context.Context, req *sip.Request, tx si
 	// Extract subscription info from request
 	fromHeader := req.From()
 	if fromHeader == nil {
-		s.respondToSubscribe(tx, req, sip.StatusCode(400), "Missing From header")
+		s.respondToSubscribe(tx, req, int(400), "Missing From header")
 		return
 	}
 
 	toHeader := req.To()
 	if toHeader == nil {
-		s.respondToSubscribe(tx, req, sip.StatusCode(400), "Missing To header")
+		s.respondToSubscribe(tx, req, int(400), "Missing To header")
 		return
 	}
 
 	via := req.Via()
 	if via == nil {
-		s.respondToSubscribe(tx, req, sip.StatusCode(400), "Missing Via header")
+		s.respondToSubscribe(tx, req, int(400), "Missing Via header")
 		return
 	}
 
 	callID := req.CallID()
 	if callID == nil {
-		s.respondToSubscribe(tx, req, sip.StatusCode(400), "Missing Call-ID header")
+		s.respondToSubscribe(tx, req, int(400), "Missing Call-ID header")
 		return
 	}
 
@@ -115,7 +115,7 @@ func (s *Server) handleMWISubscribe(ctx context.Context, req *sip.Request, tx si
 	if existing != nil {
 		if err := s.mwiMgr.RefreshSubscription(subID, expires); err != nil {
 			slog.Error("Failed to refresh MWI subscription", "error", err)
-			s.respondToSubscribe(tx, req, sip.StatusCode(500), "Internal Server Error")
+			s.respondToSubscribe(tx, req, int(500), "Internal Server Error")
 			return
 		}
 	} else {
@@ -167,13 +167,13 @@ func (s *Server) handleMWISubscribe(ctx context.Context, req *sip.Request, tx si
 func (s *Server) handleMWIUnsubscribe(ctx context.Context, req *sip.Request, tx sip.ServerTransaction) {
 	fromHeader := req.From()
 	if fromHeader == nil {
-		s.respondToSubscribe(tx, req, sip.StatusCode(400), "Missing From header")
+		s.respondToSubscribe(tx, req, int(400), "Missing From header")
 		return
 	}
 
 	callID := req.CallID()
 	if callID == nil {
-		s.respondToSubscribe(tx, req, sip.StatusCode(400), "Missing Call-ID header")
+		s.respondToSubscribe(tx, req, int(400), "Missing Call-ID header")
 		return
 	}
 
@@ -201,7 +201,7 @@ func (s *Server) handleMWIUnsubscribe(ctx context.Context, req *sip.Request, tx 
 }
 
 // respondToSubscribe sends a response to a SUBSCRIBE request
-func (s *Server) respondToSubscribe(tx sip.ServerTransaction, req *sip.Request, statusCode sip.StatusCode, reason string) {
+func (s *Server) respondToSubscribe(tx sip.ServerTransaction, req *sip.Request, statusCode int, reason string) {
 	resp := sip.NewResponseFromRequest(req, statusCode, reason, nil)
 	if err := tx.Respond(resp); err != nil {
 		slog.Error("Failed to send SUBSCRIBE response",

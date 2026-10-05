@@ -2,6 +2,8 @@
 package api
 
 import (
+	"context"
+	"log/slog"
 	"net/http"
 	"os"
 	"time"
@@ -54,6 +56,11 @@ func NewRouter(deps *Dependencies) chi.Router {
 	tlsHandler := NewTLSHandler(deps)
 	trunkHandler := NewTrunkHandler(deps)
 	businessHandler := newBusinessHandler(deps)
+	if deps.Config.PBXURL != "" {
+		if err := businessHandler.bootstrap(context.Background()); err != nil {
+			slog.Error("Could not initialize business SIP account assignments")
+		}
+	}
 
 	// Health endpoints
 	healthHandler := NewHealthHandler("0.1.0")

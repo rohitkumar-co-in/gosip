@@ -218,12 +218,12 @@ func (s *Server) evaluateAndExecuteRoute(ctx context.Context, req *sip.Request, 
 			s.sendResponse(tx, req, sip.StatusMovedTemporarily, "Moved Temporarily")
 			return true
 		case "reject":
-			var status sip.StatusCode = sip.StatusBusyHere
+			var status int = sip.StatusBusyHere
 			if len(route.ActionData) > 0 {
 				var data map[string]interface{}
 				if err := json.Unmarshal(route.ActionData, &data); err == nil {
 					if reason, ok := data["reason"].(string); ok && reason == "decline" {
-						status = sip.StatusCode(603)
+						status = int(603)
 					}
 				}
 			}
@@ -482,7 +482,7 @@ func (s *Server) handleOptions(req *sip.Request, tx sip.ServerTransaction) {
 }
 
 // sendResponse sends a simple response
-func (s *Server) sendResponse(tx sip.ServerTransaction, req *sip.Request, statusCode sip.StatusCode, reason string) {
+func (s *Server) sendResponse(tx sip.ServerTransaction, req *sip.Request, statusCode int, reason string) {
 	res := sip.NewResponseFromRequest(req, statusCode, reason, nil)
 	if err := tx.Respond(res); err != nil {
 		slog.Error("Failed to send response", "error", err, "status", statusCode)

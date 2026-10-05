@@ -21,17 +21,17 @@ const (
 
 // TransferManager handles SIP call transfers
 type TransferManager struct {
-	server     *Server
-	sessions   *SessionManager
-	holdMgr    *HoldManager
+	server   *Server
+	sessions *SessionManager
+	holdMgr  *HoldManager
 }
 
 // NewTransferManager creates a new transfer manager
 func NewTransferManager(server *Server, sessions *SessionManager, holdMgr *HoldManager) *TransferManager {
 	return &TransferManager{
-		server:     server,
-		sessions:   sessions,
-		holdMgr:    holdMgr,
+		server:   server,
+		sessions: sessions,
+		holdMgr:  holdMgr,
 	}
 }
 
@@ -461,7 +461,7 @@ func (t *TransferManager) sendNotify(session *CallSession, originalReq *sip.Requ
 	}
 }
 
-func (t *TransferManager) sendResponse(tx sip.ServerTransaction, req *sip.Request, statusCode sip.StatusCode, reason string) {
+func (t *TransferManager) sendResponse(tx sip.ServerTransaction, req *sip.Request, statusCode int, reason string) {
 	res := sip.NewResponseFromRequest(req, statusCode, reason, nil)
 	if err := tx.Respond(res); err != nil {
 		slog.Error("Failed to send response", "error", err, "status", statusCode)
