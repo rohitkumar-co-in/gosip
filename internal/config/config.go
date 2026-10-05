@@ -73,6 +73,11 @@ type Config struct {
 	TwilioSIPDomain  string // Optional Twilio registrar for mobile softphones.
 	OutboundCallerID string
 	PublicURL        string
+	PBXURL           string
+	PBXSecret        string
+	PBXSIPDomain     string
+	PBXTrunkUser     string
+	PBXTrunkPassword string
 
 	// Twilio credentials (loaded from the process environment or persistent .env).
 	twilioMu         sync.RWMutex
@@ -121,6 +126,11 @@ func Load() *Config {
 		TwilioSIPDomain:  getEnv("TWILIO_SIP_DOMAIN", ""),
 		OutboundCallerID: getEnv("GOSIP_OUTBOUND_CALLER_ID", ""),
 		PublicURL:        getEnv("GOSIP_PUBLIC_URL", ""),
+		PBXURL:           getEnv("GOSIP_PBX_URL", ""),
+		PBXSecret:        getEnv("GOSIP_PBX_SECRET", ""),
+		PBXSIPDomain:     getEnv("GOSIP_PBX_SIP_DOMAIN", ""),
+		PBXTrunkUser:     getEnv("GOSIP_PBX_TRUNK_USER", ""),
+		PBXTrunkPassword: getEnv("GOSIP_PBX_TRUNK_PASSWORD", ""),
 
 		// These are typically loaded from database after initial setup
 		TwilioAccountSID: getEnv("TWILIO_ACCOUNT_SID", ""),

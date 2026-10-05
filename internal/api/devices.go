@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/btafoya/gosip/internal/config"
 	"github.com/btafoya/gosip/internal/db"
@@ -90,6 +91,9 @@ func (h *DeviceHandler) List(w http.ResponseWriter, r *http.Request) {
 		for _, reg := range activeRegs {
 			activeMap[reg.DeviceID] = true
 		}
+	}
+	if h.deps.Config != nil && h.deps.Config.PBXURL != "" {
+		activeMap = h.pbxRegistrations(r)
 	}
 
 	var response []*DeviceResponse
@@ -198,6 +202,9 @@ func (h *DeviceHandler) Get(w http.ResponseWriter, r *http.Request) {
 	if h.deps.SIP != nil && h.deps.SIP.GetRegistrar() != nil {
 		online = h.deps.SIP.GetRegistrar().IsRegistered(r.Context(), device.ID)
 	}
+	if h.deps.Config != nil && h.deps.Config.PBXURL != "" {
+		online = h.pbxRegistrations(r)[device.ID]
+	}
 	WriteJSON(w, http.StatusOK, h.deviceResponse(device, online))
 }
 
@@ -288,6 +295,16 @@ func (h *DeviceHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 // GetRegistrations returns all active SIP registrations
 func (h *DeviceHandler) GetRegistrations(w http.ResponseWriter, r *http.Request) {
+	if h.deps.Config != nil && h.deps.Config.PBXURL != "" {
+		registrations := []map[string]interface{}{}
+		for id, online := range h.pbxRegistrations(r) {
+			if online {
+				registrations = append(registrations, map[string]interface{}{"device_id": id, "online": true})
+			}
+		}
+		WriteJSON(w, http.StatusOK, registrations)
+		return
+	}
 	if h.deps.SIP == nil {
 		WriteJSON(w, http.StatusOK, []interface{}{})
 		return
@@ -324,8 +341,37 @@ func toDeviceResponse(device *models.Device, online bool) *DeviceResponse {
 
 func (h *DeviceHandler) deviceResponse(device *models.Device, online bool) *DeviceResponse {
 	response := toDeviceResponse(device, online)
-	if h.deps.Config != nil && h.deps.Config.TwilioSIPDomain != "" {
+	if h.deps.Config != nil && h.deps.Config.PBXURL != "" {
+		response.RegistrationProvider = "asterisk"
+	} else if h.deps.Config != nil && h.deps.Config.TwilioSIPDomain != "" {
 		response.RegistrationProvider = "twilio"
 	}
 	return response
+}
+
+func (h *DeviceHandler) pbxRegistrations(r *http.Request) map[int64]bool {
+	result := make(map[int64]bool)
+	request, err := http.NewRequestWithContext(r.Context(), http.MethodGet, h.deps.Config.PBXURL+"/registrations", nil)
+	if err != nil {
+		return result
+	}
+	request.Header.Set("Authorization", "Bearer "+h.deps.Config.PBXSecret)
+	response, err := (&http.Client{Timeout: 2 * time.Second}).Do(request)
+	if err != nil {
+		return result
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		return result
+	}
+	var registrations []struct {
+		DeviceID int64 `json:"device_id"`
+		Online   bool  `json:"online"`
+	}
+	if json.NewDecoder(response.Body).Decode(&registrations) == nil {
+		for _, registration := range registrations {
+			result[registration.DeviceID] = registration.Online
+		}
+	}
+	return result
 }

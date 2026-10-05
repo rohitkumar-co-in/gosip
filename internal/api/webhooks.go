@@ -246,6 +246,10 @@ func (h *WebhookHandler) SMSIncoming(w http.ResponseWriter, r *http.Request) {
 		h.respondTwiML(w, "")
 		return
 	}
+	if !h.validateSignature(r) {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
 
 	from := r.FormValue("From")
 	to := r.FormValue("To")
@@ -500,7 +504,13 @@ func (h *WebhookHandler) executeAction(ctx context.Context, route *models.Route,
 						domain = h.deps.Config.TwilioSIPDomain
 						transport = ";transport=tls;secure=true"
 					}
-					dialTargets = append(dialTargets, `<Sip>sip:`+escapeXML(device.Username)+`@`+escapeXML(domain)+transport+`</Sip>`)
+					attributes := ""
+					if h.deps.Config.PBXSIPDomain != "" {
+						domain = h.deps.Config.PBXSIPDomain
+						transport = ";transport=tls;secure=true"
+						attributes = ` username="` + escapeXML(h.deps.Config.PBXTrunkUser) + `" password="` + escapeXML(h.deps.Config.PBXTrunkPassword) + `"`
+					}
+					dialTargets = append(dialTargets, `<Sip`+attributes+`>sip:`+escapeXML(device.Username)+`@`+escapeXML(domain)+transport+`</Sip>`)
 				}
 			}
 

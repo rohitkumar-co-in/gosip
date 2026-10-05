@@ -45,6 +45,7 @@ func NewRouter(deps *Dependencies) chi.Router {
 	cdrHandler := NewCDRHandler(deps)
 	voicemailHandler := NewVoicemailHandler(deps)
 	messageHandler := NewMessageHandler(deps)
+	pbxHandler := &PBXHandler{deps: deps}
 	systemHandler := NewSystemHandler(deps)
 	webhookHandler := NewWebhookHandler(deps)
 	provisioningHandler := NewProvisioningHandler(deps)
@@ -62,6 +63,7 @@ func NewRouter(deps *Dependencies) chi.Router {
 
 	// Public routes
 	r.Route("/api", func(r chi.Router) {
+		r.Post("/pbx/messages", pbxHandler.SendMessage)
 		// Auth routes (public)
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/login", authHandler.Login)

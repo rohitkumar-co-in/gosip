@@ -197,12 +197,12 @@ const registeredCount = computed(() => devices.value.filter(d => d.registered).l
               <span
                 :class="[
                   'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                  device.registered
+                  device.online
                     ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                     : 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200'
                 ]"
               >
-                <component :is="device.registered ? Phone : PhoneOff" class="h-3 w-3 mr-1" />
+                <component :is="device.online ? Phone : PhoneOff" class="h-3 w-3 mr-1" />
                 {{ device.registration_provider === 'twilio' ? 'Managed by Twilio' : device.online ? 'Online' : 'Offline' }}
               </span>
             </td>
