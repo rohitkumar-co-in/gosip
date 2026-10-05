@@ -98,6 +98,9 @@ func (c *Client) sendSMSOnce(from, to, body string, mediaURLs []string) (string,
 	params.SetFrom(from)
 	params.SetTo(to)
 	params.SetBody(body)
+	if c.cfg.PublicURL != "" {
+		params.SetStatusCallback(c.cfg.PublicURL + "/api/webhooks/sms/status")
+	}
 
 	if len(mediaURLs) > 0 {
 		params.SetMediaUrl(mediaURLs)

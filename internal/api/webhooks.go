@@ -59,6 +59,7 @@ func (h *WebhookHandler) VoiceIncoming(w http.ResponseWriter, r *http.Request) {
 		h.respondTwiML(w, h.errorTwiML("Number not found"))
 		return
 	}
+	h.recordVoiceCall(r.Context(), callSID, "inbound", from, to, did.ID, nil)
 
 	// Get routing rules for this DID
 	routes, err := h.deps.DB.Routes.GetEnabledByDID(r.Context(), did.ID)
@@ -143,12 +144,32 @@ func (h *WebhookHandler) VoicemailRecording(w http.ResponseWriter, r *http.Reque
 
 	// Create voicemail record
 	voicemail := &models.Voicemail{
-		UserID:     &didID,
 		FromNumber: from,
 		Duration:   duration,
 		AudioURL:   recordingURL + ".mp3",
 		IsRead:     false,
 		CreatedAt:  time.Now(),
+	}
+	if cdr, err := h.deps.DB.CDRs.GetByCallSID(r.Context(), r.FormValue("CallSid")); err == nil {
+		voicemail.CDRID = &cdr.ID
+	}
+	if routes, err := h.deps.DB.Routes.GetEnabledByDID(r.Context(), didID); err == nil {
+		for _, route := range routes {
+			var action struct {
+				Devices []int64 `json:"devices"`
+			}
+			if route.ActionType == "ring" && json.Unmarshal(route.ActionData, &action) == nil {
+				for _, id := range action.Devices {
+					if device, err := h.deps.DB.Devices.GetByID(r.Context(), id); err == nil && device.UserID != nil {
+						voicemail.UserID = device.UserID
+						break
+					}
+				}
+			}
+			if voicemail.UserID != nil {
+				break
+			}
+		}
 	}
 	_ = recordingSID // Used by Twilio for transcription requests
 
@@ -170,12 +191,12 @@ func (h *WebhookHandler) VoicemailRecording(w http.ResponseWriter, r *http.Reque
 	safeGo(func() { h.sendVoicemailNotification(voicemail) })
 
 	// Trigger MWI notification for new voicemail
-	if voicemail.UserID != nil {
+	if h.deps.SIP != nil {
 		mwiNotifier := NewMWINotifier(h.deps)
-		safeGo(func() { mwiNotifier.UpdateMWIForDID(r.Context(), *voicemail.UserID) })
+		safeGo(func() { mwiNotifier.UpdateMWIForDID(context.Background(), didID) })
 	}
 
-	w.WriteHeader(http.StatusOK)
+	h.respondTwiML(w, `<Response><Say>Goodbye.</Say><Hangup/></Response>`)
 }
 
 // VoicemailTranscription handles transcription completion
@@ -362,10 +383,13 @@ func (h *WebhookHandler) validateSignature(r *http.Request) bool {
 // spoofing risk and removes the dependency on r.TLS being non-nil (which is false
 // when a TLS-terminating proxy fronts gosip).
 func (h *WebhookHandler) buildValidationURL(r *http.Request) string {
+	if h.deps.Config.PublicURL != "" {
+		return strings.TrimRight(h.deps.Config.PublicURL, "/") + r.URL.RequestURI()
+	}
 	publicURL, err := h.deps.DB.Config.Get(r.Context(), "public_url")
 	if err == nil && publicURL != "" {
 		publicURL = strings.TrimRight(publicURL, "/")
-		return publicURL + r.URL.Path
+		return publicURL + r.URL.RequestURI()
 	}
 
 	scheme := "https"
@@ -374,7 +398,7 @@ func (h *WebhookHandler) buildValidationURL(r *http.Request) string {
 	} else if r.TLS == nil {
 		scheme = "http"
 	}
-	return scheme + "://" + r.Host + r.URL.Path
+	return scheme + "://" + r.Host + r.URL.RequestURI()
 }
 
 func (h *WebhookHandler) respondTwiML(w http.ResponseWriter, twiml string) {
@@ -470,7 +494,13 @@ func (h *WebhookHandler) executeAction(ctx context.Context, route *models.Route,
 			for _, deviceID := range data.Devices {
 				device, err := h.deps.DB.Devices.GetByID(ctx, deviceID)
 				if err == nil {
-					dialTargets = append(dialTargets, `<Sip>`+escapeXML(device.Username)+`@sip.gosip.local</Sip>`)
+					domain := h.deps.Config.SIPDomain
+					transport := ""
+					if h.deps.Config.TwilioSIPDomain != "" {
+						domain = h.deps.Config.TwilioSIPDomain
+						transport = ";transport=tls;secure=true"
+					}
+					dialTargets = append(dialTargets, `<Sip>sip:`+escapeXML(device.Username)+`@`+escapeXML(domain)+transport+`</Sip>`)
 				}
 			}
 
@@ -479,10 +509,9 @@ func (h *WebhookHandler) executeAction(ctx context.Context, route *models.Route,
 			}
 
 			return `<Response>
-				<Dial timeout="` + strconv.Itoa(timeout) + `" action="/api/webhooks/voice/status">
+				<Dial timeout="` + strconv.Itoa(timeout) + `" action="/api/webhooks/voice/dial-complete?DidId=` + strconv.FormatInt(did.ID, 10) + `">
 					` + strings.Join(dialTargets, "\n") + `
 				</Dial>
-				` + h.voicemailTwiML(ctx, did.ID, from) + `
 			</Response>`
 		}
 

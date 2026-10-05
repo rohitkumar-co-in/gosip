@@ -9,6 +9,7 @@ export interface Device {
   recording_enabled: boolean
   created_at: string
   online: boolean
+  registration_provider?: 'twilio'
   registered?: boolean
   extension?: string
   caller_id?: string

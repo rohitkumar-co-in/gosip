@@ -66,10 +66,13 @@ type ZRTPConfig struct {
 // Config holds the runtime configuration for GoSIP
 type Config struct {
 	// Server settings
-	SIPPort   int
-	HTTPPort  int
-	DataDir   string
-	SIPDomain string // SIP domain for registrations (e.g., "sip.example.com")
+	SIPPort          int
+	HTTPPort         int
+	DataDir          string
+	SIPDomain        string // SIP domain for registrations (e.g., "sip.example.com")
+	TwilioSIPDomain  string // Optional Twilio registrar for mobile softphones.
+	OutboundCallerID string
+	PublicURL        string
 
 	// Twilio credentials (loaded from the process environment or persistent .env).
 	twilioMu         sync.RWMutex
@@ -111,10 +114,13 @@ type Config struct {
 // Load creates a Config from environment variables with defaults
 func Load() *Config {
 	cfg := &Config{
-		SIPPort:   getEnvInt("GOSIP_SIP_PORT", DefaultSIPPort),
-		HTTPPort:  getEnvInt("GOSIP_HTTP_PORT", DefaultHTTPPort),
-		DataDir:   getEnv("GOSIP_DATA_DIR", DefaultDataDir),
-		SIPDomain: getEnv("GOSIP_SIP_DOMAIN", "localhost"),
+		SIPPort:          getEnvInt("GOSIP_SIP_PORT", DefaultSIPPort),
+		HTTPPort:         getEnvInt("GOSIP_HTTP_PORT", DefaultHTTPPort),
+		DataDir:          getEnv("GOSIP_DATA_DIR", DefaultDataDir),
+		SIPDomain:        getEnv("GOSIP_SIP_DOMAIN", "localhost"),
+		TwilioSIPDomain:  getEnv("TWILIO_SIP_DOMAIN", ""),
+		OutboundCallerID: getEnv("GOSIP_OUTBOUND_CALLER_ID", ""),
+		PublicURL:        getEnv("GOSIP_PUBLIC_URL", ""),
 
 		// These are typically loaded from database after initial setup
 		TwilioAccountSID: getEnv("TWILIO_ACCOUNT_SID", ""),

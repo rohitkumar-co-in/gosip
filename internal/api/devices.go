@@ -24,18 +24,19 @@ func NewDeviceHandler(deps *Dependencies) *DeviceHandler {
 
 // DeviceResponse represents a device in API responses
 type DeviceResponse struct {
-	ID                 int64   `json:"id"`
-	UserID             *int64  `json:"user_id,omitempty"`
-	Name               string  `json:"name"`
-	Username           string  `json:"username"`
-	DeviceType         string  `json:"device_type"`
-	RecordingEnabled   bool    `json:"recording_enabled"`
-	CreatedAt          string  `json:"created_at"`
-	Online             bool    `json:"online"`
-	Vendor             *string `json:"vendor,omitempty"`
-	Model              *string `json:"model,omitempty"`
-	ProvisioningStatus string  `json:"provisioning_status,omitempty"`
-	LastConfigFetch    *string `json:"last_config_fetch,omitempty"`
+	ID                   int64   `json:"id"`
+	UserID               *int64  `json:"user_id,omitempty"`
+	Name                 string  `json:"name"`
+	Username             string  `json:"username"`
+	DeviceType           string  `json:"device_type"`
+	RecordingEnabled     bool    `json:"recording_enabled"`
+	CreatedAt            string  `json:"created_at"`
+	Online               bool    `json:"online"`
+	RegistrationProvider string  `json:"registration_provider,omitempty"`
+	Vendor               *string `json:"vendor,omitempty"`
+	Model                *string `json:"model,omitempty"`
+	ProvisioningStatus   string  `json:"provisioning_status,omitempty"`
+	LastConfigFetch      *string `json:"last_config_fetch,omitempty"`
 }
 
 // List returns all devices
@@ -97,7 +98,7 @@ func (h *DeviceHandler) List(w http.ResponseWriter, r *http.Request) {
 		if activeMap != nil {
 			online = activeMap[d.ID]
 		}
-		response = append(response, toDeviceResponse(d, online))
+		response = append(response, h.deviceResponse(d, online))
 	}
 
 	WriteList(w, response, total, limit, offset)
@@ -172,7 +173,7 @@ func (h *DeviceHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteJSON(w, http.StatusCreated, toDeviceResponse(device, false))
+	WriteJSON(w, http.StatusCreated, h.deviceResponse(device, false))
 }
 
 // Get returns a specific device
@@ -197,7 +198,7 @@ func (h *DeviceHandler) Get(w http.ResponseWriter, r *http.Request) {
 	if h.deps.SIP != nil && h.deps.SIP.GetRegistrar() != nil {
 		online = h.deps.SIP.GetRegistrar().IsRegistered(r.Context(), device.ID)
 	}
-	WriteJSON(w, http.StatusOK, toDeviceResponse(device, online))
+	WriteJSON(w, http.StatusOK, h.deviceResponse(device, online))
 }
 
 // UpdateDeviceRequest represents a device update request
@@ -266,7 +267,7 @@ func (h *DeviceHandler) Update(w http.ResponseWriter, r *http.Request) {
 	if h.deps.SIP != nil && h.deps.SIP.GetRegistrar() != nil {
 		online = h.deps.SIP.GetRegistrar().IsRegistered(r.Context(), device.ID)
 	}
-	WriteJSON(w, http.StatusOK, toDeviceResponse(device, online))
+	WriteJSON(w, http.StatusOK, h.deviceResponse(device, online))
 }
 
 // Delete removes a device
@@ -319,4 +320,12 @@ func toDeviceResponse(device *models.Device, online bool) *DeviceResponse {
 		resp.LastConfigFetch = &formatted
 	}
 	return resp
+}
+
+func (h *DeviceHandler) deviceResponse(device *models.Device, online bool) *DeviceResponse {
+	response := toDeviceResponse(device, online)
+	if h.deps.Config != nil && h.deps.Config.TwilioSIPDomain != "" {
+		response.RegistrationProvider = "twilio"
+	}
+	return response
 }

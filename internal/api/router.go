@@ -78,6 +78,9 @@ func NewRouter(deps *Dependencies) chi.Router {
 		// Twilio webhooks (secured by Twilio signature validation)
 		r.Route("/webhooks", func(r chi.Router) {
 			r.Post("/voice/incoming", webhookHandler.VoiceIncoming)
+			r.Post("/voice/outgoing", webhookHandler.VoiceOutgoing)
+			r.Post("/voice/dial-complete", webhookHandler.VoiceDialComplete)
+			r.Post("/voicemail/recording", webhookHandler.VoicemailRecording)
 			r.Post("/voice/status", webhookHandler.VoiceStatus)
 			r.Post("/sms/incoming", webhookHandler.SMSIncoming)
 			r.Post("/sms/status", webhookHandler.SMSStatus)

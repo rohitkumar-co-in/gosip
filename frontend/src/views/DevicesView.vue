@@ -203,7 +203,7 @@ const registeredCount = computed(() => devices.value.filter(d => d.registered).l
                 ]"
               >
                 <component :is="device.registered ? Phone : PhoneOff" class="h-3 w-3 mr-1" />
-                {{ device.registered ? 'Online' : 'Offline' }}
+                {{ device.registration_provider === 'twilio' ? 'Managed by Twilio' : device.online ? 'Online' : 'Offline' }}
               </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
