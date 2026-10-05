@@ -47,6 +47,10 @@ services:
       - /data/gosip-pbx/certs:/certs:ro
     environment:
       GOSIP_URL: http://gosip:8080
+      # Coolify injects the application's .env into each service. Override
+      # these here: the PBX uses SIP trunk credentials, not the Twilio API.
+      TWILIO_ACCOUNT_SID: ""
+      TWILIO_AUTH_TOKEN: ""
       GOSIP_PBX_SECRET: ${GOSIP_PBX_SECRET}
       GOSIP_PBX_TRUNK_USER: ${GOSIP_PBX_TRUNK_USER}
       GOSIP_PBX_TRUNK_PASSWORD: ${GOSIP_PBX_TRUNK_PASSWORD}
