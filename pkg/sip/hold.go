@@ -1,4 +1,4 @@
-// Package sip provides hold/resume functionality for GoSIP
+// Package sip provides hold/resume functionality for Leadomi SIP
 package sip
 
 import (
@@ -179,7 +179,7 @@ func (h *HoldManager) handleMediaUpdate(session *CallSession, req *sip.Request, 
 	return nil
 }
 
-// PutOnHold initiates hold from our side (GoSIP putting remote on hold)
+// PutOnHold initiates hold from our side (Leadomi SIP putting remote on hold)
 func (h *HoldManager) PutOnHold(ctx context.Context, session *CallSession) error {
 	if session.GetState() != CallStateActive {
 		return fmt.Errorf("can only hold active calls, current state: %s", session.GetState())
@@ -299,7 +299,7 @@ func (h *HoldManager) generateHoldSDP(session *CallSession) []byte {
 		// Generate basic hold SDP
 		return []byte(`v=0
 o=gosip 0 0 IN IP4 0.0.0.0
-s=GoSIP Call
+s=Leadomi SIP Call
 c=IN IP4 0.0.0.0
 t=0 0
 m=audio 0 RTP/AVP 0 8 101
@@ -330,7 +330,7 @@ func (h *HoldManager) generateResumeSDP(session *CallSession) []byte {
 		// Generate basic active SDP
 		return []byte(`v=0
 o=gosip 0 0 IN IP4 0.0.0.0
-s=GoSIP Call
+s=Leadomi SIP Call
 c=IN IP4 0.0.0.0
 t=0 0
 m=audio 0 RTP/AVP 0 8 101

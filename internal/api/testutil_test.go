@@ -10,30 +10,30 @@ import (
 	"testing"
 	"time"
 
-	"github.com/btafoya/gosip/internal/db"
-	"github.com/btafoya/gosip/internal/models"
-	"github.com/btafoya/gosip/internal/twilio"
 	"github.com/go-chi/chi/v5"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/rohitkumar-co-in/gosip/internal/db"
+	"github.com/rohitkumar-co-in/gosip/internal/models"
+	"github.com/rohitkumar-co-in/gosip/internal/twilio"
 )
 
 // MockTwilioClient is a mock implementation of TwilioClient for testing
 type MockTwilioClient struct {
-	SendSMSFunc                   func(from, to, body string, mediaURLs []string) (string, error)
-	SendSMSWithCallbackFunc       func(from, to, body string, mediaURLs []string, statusCallback string) (string, error)
-	GetMessageFunc                func(ctx context.Context, messageSID string) (*twilio.TwilioMessage, error)
-	ListMessagesFunc              func(ctx context.Context, from, to string, limit int) ([]*twilio.TwilioMessage, error)
-	DeleteMessageFunc             func(ctx context.Context, messageSID string) error
-	CancelMessageFunc             func(ctx context.Context, messageSID string) error
-	ResendMessageFunc             func(ctx context.Context, originalSID string) (string, error)
-	GetMediaURLsFunc              func(ctx context.Context, messageSID string) ([]string, error)
-	UpdateCredentialsFunc         func(accountSID, authToken string)
-	IsHealthyFunc                 func() bool
-	RequestTranscriptionFunc      func(recordingSID string, voicemailID int64) error
-	ListIncomingPhoneNumbersFunc  func(ctx context.Context) ([]twilio.IncomingPhoneNumber, error)
-	ListSIPTrunksFunc             func(ctx context.Context) ([]*twilio.SIPTrunk, error)
-	CreateSIPTrunkFunc            func(ctx context.Context, friendlyName string, secure bool) (*twilio.SIPTrunk, error)
-	AssignPhoneNumberToTrunkFunc  func(ctx context.Context, trunkSID, phoneNumberSID string) error
+	SendSMSFunc                  func(from, to, body string, mediaURLs []string) (string, error)
+	SendSMSWithCallbackFunc      func(from, to, body string, mediaURLs []string, statusCallback string) (string, error)
+	GetMessageFunc               func(ctx context.Context, messageSID string) (*twilio.TwilioMessage, error)
+	ListMessagesFunc             func(ctx context.Context, from, to string, limit int) ([]*twilio.TwilioMessage, error)
+	DeleteMessageFunc            func(ctx context.Context, messageSID string) error
+	CancelMessageFunc            func(ctx context.Context, messageSID string) error
+	ResendMessageFunc            func(ctx context.Context, originalSID string) (string, error)
+	GetMediaURLsFunc             func(ctx context.Context, messageSID string) ([]string, error)
+	UpdateCredentialsFunc        func(accountSID, authToken string)
+	IsHealthyFunc                func() bool
+	RequestTranscriptionFunc     func(recordingSID string, voicemailID int64) error
+	ListIncomingPhoneNumbersFunc func(ctx context.Context) ([]twilio.IncomingPhoneNumber, error)
+	ListSIPTrunksFunc            func(ctx context.Context) ([]*twilio.SIPTrunk, error)
+	CreateSIPTrunkFunc           func(ctx context.Context, friendlyName string, secure bool) (*twilio.SIPTrunk, error)
+	AssignPhoneNumberToTrunkFunc func(ctx context.Context, trunkSID, phoneNumberSID string) error
 }
 
 func (m *MockTwilioClient) SendSMS(from, to, body string, mediaURLs []string) (string, error) {

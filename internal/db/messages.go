@@ -6,7 +6,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/btafoya/gosip/internal/models"
+	"github.com/rohitkumar-co-in/gosip/internal/models"
 )
 
 var ErrMessageNotFound = errors.New("message not found")
@@ -378,14 +378,14 @@ func (r *MessageRepository) GetStats(ctx context.Context) (map[string]interface{
 	}
 
 	return map[string]interface{}{
-		"total":       total,
-		"inbound":     inbound,
-		"outbound":    outbound,
-		"unread":      unread,
-		"failed":      failed,
-		"today":       today,
-		"this_week":   thisWeek,
-		"this_month":  thisMonth,
+		"total":      total,
+		"inbound":    inbound,
+		"outbound":   outbound,
+		"unread":     unread,
+		"failed":     failed,
+		"today":      today,
+		"this_week":  thisWeek,
+		"this_month": thisMonth,
 	}, nil
 }
 
@@ -432,13 +432,12 @@ func (r *MessageRepository) GetConversationSummaries(ctx context.Context, didID 
 		if err := rows.Scan(&phoneNumber, &lastMessageAtStr, &messageCount, &unreadCount); err != nil {
 			return nil, err
 		}
-		// Parse the timestamp string from SQLite
-		lastMessageAt, _ := time.Parse("2006-01-02 15:04:05-07:00", lastMessageAtStr)
-		if lastMessageAt.IsZero() {
-			lastMessageAt, _ = time.Parse("2006-01-02T15:04:05Z", lastMessageAtStr)
-		}
-		if lastMessageAt.IsZero() {
-			lastMessageAt, _ = time.Parse(time.RFC3339, lastMessageAtStr)
+		var lastMessageAt time.Time
+		for _, layout := range []string{time.RFC3339Nano, "2006-01-02 15:04:05.999999999-07:00", "2006-01-02 15:04:05.999999999+00:00", "2006-01-02 15:04:05.999999999"} {
+			lastMessageAt, _ = time.Parse(layout, lastMessageAtStr)
+			if !lastMessageAt.IsZero() {
+				break
+			}
 		}
 		summaries = append(summaries, map[string]interface{}{
 			"phone_number":    phoneNumber,

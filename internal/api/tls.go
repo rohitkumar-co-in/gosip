@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/btafoya/gosip/internal/db"
-	"github.com/btafoya/gosip/pkg/sip"
+	"github.com/rohitkumar-co-in/gosip/internal/db"
+	"github.com/rohitkumar-co-in/gosip/pkg/sip"
 )
 
 // containsPathTraversal checks if a file path contains directory traversal sequences.
@@ -675,12 +675,12 @@ type TrunkTLSStatusResponse struct {
 
 // TrunkTLSInfo represents TLS info for a single trunk
 type TrunkTLSInfo struct {
-	TrunkSID         string                   `json:"trunk_sid"`
-	FriendlyName     string                   `json:"friendly_name"`
-	SecureMode       bool                     `json:"secure_mode"`
-	AllSecure        bool                     `json:"all_secure"`
-	InsecureURLCount int                      `json:"insecure_url_count"`
-	OriginationURLs  []OriginationURLInfo     `json:"origination_urls"`
+	TrunkSID         string               `json:"trunk_sid"`
+	FriendlyName     string               `json:"friendly_name"`
+	SecureMode       bool                 `json:"secure_mode"`
+	AllSecure        bool                 `json:"all_secure"`
+	InsecureURLCount int                  `json:"insecure_url_count"`
+	OriginationURLs  []OriginationURLInfo `json:"origination_urls"`
 }
 
 // OriginationURLInfo represents info about an origination URL
@@ -793,9 +793,9 @@ func (h *TLSHandler) EnableTrunkTLS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	WriteJSON(w, http.StatusOK, map[string]interface{}{
-		"message":      "TLS enabled successfully",
-		"secure_mode":  status.SecureMode,
-		"all_secure":   status.AllSecure,
+		"message":       "TLS enabled successfully",
+		"secure_mode":   status.SecureMode,
+		"all_secure":    status.AllSecure,
 		"insecure_urls": status.InsecureURLCount,
 	})
 }
@@ -840,18 +840,18 @@ func (h *TLSHandler) MigrateTrunkOrigination(w http.ResponseWriter, r *http.Requ
 	}
 
 	WriteJSON(w, http.StatusOK, map[string]interface{}{
-		"message":      "Origination URLs migrated to TLS",
-		"all_secure":   status.AllSecure,
+		"message":       "Origination URLs migrated to TLS",
+		"all_secure":    status.AllSecure,
 		"insecure_urls": status.InsecureURLCount,
 	})
 }
 
 // CreateSecureTrunkRequest represents a request to create a new secure trunk
 type CreateSecureTrunkRequest struct {
-	FriendlyName     string `json:"friendly_name"`
-	OriginationURI   string `json:"origination_uri"`
-	OriginationPriority int `json:"origination_priority"`
-	OriginationWeight   int `json:"origination_weight"`
+	FriendlyName        string `json:"friendly_name"`
+	OriginationURI      string `json:"origination_uri"`
+	OriginationPriority int    `json:"origination_priority"`
+	OriginationWeight   int    `json:"origination_weight"`
 }
 
 // CreateSecureTrunk creates a new Twilio SIP trunk with TLS enabled

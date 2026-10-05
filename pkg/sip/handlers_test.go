@@ -3,7 +3,7 @@ package sip
 import (
 	"testing"
 
-	"github.com/btafoya/gosip/internal/config"
+	"github.com/rohitkumar-co-in/gosip/internal/config"
 )
 
 func TestGetExpires_Default(t *testing.T) {
@@ -180,8 +180,8 @@ func TestConfigConstants(t *testing.T) {
 	})
 
 	t.Run("DefaultUserAgent", func(t *testing.T) {
-		if config.DefaultUserAgent != "GoSIP/1.0" {
-			t.Errorf("DefaultUserAgent should be GoSIP/1.0, got %s", config.DefaultUserAgent)
+		if config.DefaultUserAgent != "Leadomi SIP/1.0" {
+			t.Errorf("DefaultUserAgent should be Leadomi SIP/1.0, got %s", config.DefaultUserAgent)
 		}
 	})
 }

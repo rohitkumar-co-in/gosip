@@ -1,4 +1,4 @@
-"""Probe HTTP assets and SIP signaling for a deployed GoSIP container."""
+"""Probe HTTP assets and SIP signaling for a deployed Leadomi SIP container."""
 import argparse
 import json
 import re

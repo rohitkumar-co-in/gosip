@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/btafoya/gosip/internal/db"
-	"github.com/btafoya/gosip/internal/models"
+	"github.com/rohitkumar-co-in/gosip/internal/db"
+	"github.com/rohitkumar-co-in/gosip/internal/models"
 )
 
 // setupTestDB creates an in-memory SQLite database for testing

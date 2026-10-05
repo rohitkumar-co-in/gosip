@@ -1,8 +1,8 @@
 #!/bin/bash
 #
-# GoSIP Backup Script
+# Leadomi SIP Backup Script
 #
-# This script creates backups of the GoSIP database and media files.
+# This script creates backups of the Leadomi SIP database and media files.
 # Designed to run via cron for automated daily backups.
 #
 # Usage:
@@ -73,7 +73,7 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --help)
-            echo "GoSIP Backup Script"
+            echo "Leadomi SIP Backup Script"
             echo ""
             echo "Usage: $0 [options]"
             echo ""
@@ -119,7 +119,7 @@ fi
 mkdir -p "$BACKUP_DIR"
 
 log "=========================================="
-log "GoSIP Backup Starting"
+log "Leadomi SIP Backup Starting"
 log "=========================================="
 log "Data directory: $DATA_DIR"
 log "Backup directory: $BACKUP_DIR"

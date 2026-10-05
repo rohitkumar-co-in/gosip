@@ -20,10 +20,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/btafoya/gosip/internal/db"
-	"github.com/btafoya/gosip/internal/models"
-	"github.com/btafoya/gosip/pkg/sip"
 	"github.com/go-chi/chi/v5"
+	"github.com/rohitkumar-co-in/gosip/internal/db"
+	"github.com/rohitkumar-co-in/gosip/internal/models"
+	"github.com/rohitkumar-co-in/gosip/pkg/sip"
 )
 
 var businessMu sync.Mutex
@@ -82,10 +82,18 @@ func (h *BusinessHandler) twilio(ctx context.Context, method, path string, form 
 }
 
 type businessNumber struct {
-	SID          string `json:"sid"`
-	Number       string `json:"phone_number"`
-	Name         string `json:"friendly_name"`
-	Capabilities struct {
+	SID              string `json:"sid"`
+	Number           string `json:"phone_number"`
+	Name             string `json:"friendly_name"`
+	VoiceURL         string `json:"voice_url"`
+	SMSURL           string `json:"sms_url"`
+	StatusURL        string `json:"status_callback"`
+	VoiceMethod      string `json:"voice_method"`
+	SMSMethod        string `json:"sms_method"`
+	StatusMethod     string `json:"status_callback_method"`
+	VoiceApplication string `json:"voice_application_sid"`
+	SMSApplication   string `json:"sms_application_sid"`
+	Capabilities     struct {
 		Voice bool `json:"voice"`
 		SMS   bool `json:"sms"`
 	} `json:"capabilities"`
@@ -272,10 +280,12 @@ func (h *BusinessHandler) pbxCredential(ctx context.Context, user, password stri
 }
 
 type businessRequest struct {
-	Name     string `json:"name"`
-	Username string `json:"username"`
-	Number   string `json:"number"`
-	Reset    bool   `json:"reset_password"`
+	Name         string `json:"name"`
+	Username     string `json:"username"`
+	Number       string `json:"number"`
+	Reset        bool   `json:"reset_password"`
+	Password     string `json:"password"`
+	NumberReview string `json:"number_review"`
 }
 
 func (h *BusinessHandler) Provision(w http.ResponseWriter, r *http.Request) {
@@ -347,6 +357,52 @@ func (h *BusinessHandler) Provision(w http.ResponseWriter, r *http.Request) {
 		WriteValidationError(w, "Select an owned Twilio number supporting both voice and SMS", nil)
 		return
 	}
+	// A ready user's ordinary edits never touch provider credentials or routing.
+	var oldNumber, oldState string
+	var oldEnabled bool
+	if device != nil {
+		h.deps.DB.Conn().QueryRowContext(r.Context(), "SELECT number,state,enabled FROM sip_accounts WHERE device_id=?", device.ID).Scan(&oldNumber, &oldState, &oldEnabled)
+	}
+	if req.Password != "" && !validPhonePassword(req.Password) {
+		WriteValidationError(w, "Phone password must be 12–72 printable ASCII characters without spaces", nil)
+		return
+	}
+	if device != nil && oldNumber == req.Number && oldState == "ready" && oldEnabled {
+		hash := device.PasswordHash
+		phonePassword := req.Password
+		if req.Reset && phonePassword == "" {
+			phonePassword, err = password()
+		}
+		if err != nil {
+			WriteInternalError(w)
+			return
+		}
+		if phonePassword != "" {
+			hash = sip.GenerateHA1(device.Username, "gosip", phonePassword)
+		}
+		if _, err = h.deps.DB.Conn().ExecContext(r.Context(), "UPDATE devices SET name=?,password_hash=? WHERE id=?", req.Name, hash, device.ID); err != nil {
+			WriteInternalError(w)
+			return
+		}
+		h.audit(r.Context(), getUserIDFromContext(r.Context()), "edit_user", device.Username, "connections_preserved")
+		w.Header().Set("Cache-Control", "no-store")
+		WriteJSON(w, 200, map[string]interface{}{"id": device.ID, "username": device.Username, "number": req.Number, "state": "ready", "password": phonePassword, "proxy": "sip:" + h.deps.Config.PBXSIPDomain + ":5061;transport=tls", "server": h.deps.Config.PBXSIPDomain})
+		return
+	}
+	// Review is read-only and must precede every external or local mutation.
+	review, err := h.reviewNumber(r.Context(), *owned)
+	if err != nil {
+		WriteError(w, 502, "NUMBER_CHECK_FAILED", err.Error(), nil)
+		return
+	}
+	if review.Blocked {
+		WriteError(w, 409, "NUMBER_CONNECTED", "This number uses a Messaging Service inbound handler. Preserve it or enable number-level inbound routing in Twilio yourself before assigning it", nil)
+		return
+	}
+	if req.NumberReview == "" || req.NumberReview != review.Fingerprint {
+		WriteError(w, 409, "NUMBER_REVIEW_REQUIRED", "Review the number's current connections and explicitly confirm this assignment first. Its configuration may have changed", nil)
+		return
+	}
 	listSID, err := h.credentialList(r.Context())
 	if err != nil {
 		WriteError(w, 502, "TWILIO_ERROR", err.Error(), nil)
@@ -362,7 +418,7 @@ func (h *BusinessHandler) Provision(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, 409, "USERNAME_EXISTS", "That username already exists in Twilio. Choose a different username", nil)
 		return
 	}
-	phonePassword := ""
+	phonePassword := req.Password
 	if device != nil {
 		var existingNumber string
 		h.deps.DB.Conn().QueryRowContext(r.Context(), "SELECT number FROM sip_accounts WHERE device_id=?", device.ID).Scan(&existingNumber)
@@ -370,7 +426,7 @@ func (h *BusinessHandler) Provision(w http.ResponseWriter, r *http.Request) {
 			req.Reset = true
 		}
 	}
-	if device == nil || req.Reset {
+	if (device == nil || req.Reset) && phonePassword == "" {
 		phonePassword, err = password()
 		if err != nil {
 			WriteInternalError(w)
@@ -436,74 +492,6 @@ func (h *BusinessHandler) Provision(w http.ResponseWriter, r *http.Request) {
 	h.audit(r.Context(), getUserIDFromContext(r.Context()), "provision", device.Username, "ready")
 	w.Header().Set("Cache-Control", "no-store")
 	WriteJSON(w, 200, map[string]interface{}{"id": device.ID, "username": device.Username, "number": req.Number, "state": "ready", "password": phonePassword, "proxy": "sip:" + h.deps.Config.PBXSIPDomain + ":5061;transport=tls", "server": h.deps.Config.PBXSIPDomain})
-}
-func (h *BusinessHandler) configureNumber(ctx context.Context, sid string) error {
-	if !resourceSID.MatchString(sid) || !strings.HasPrefix(h.deps.Config.PublicURL, "https://") {
-		return fmt.Errorf("A public HTTPS URL is required")
-	}
-	base := strings.TrimSuffix(h.deps.Config.PublicURL, "/")
-	form := url.Values{"VoiceUrl": {base + "/api/webhooks/voice/incoming"}, "VoiceMethod": {"POST"}, "SmsUrl": {base + "/api/webhooks/sms/incoming"}, "SmsMethod": {"POST"}, "StatusCallback": {base + "/api/webhooks/voice/status"}, "StatusCallbackMethod": {"POST"}, "VoiceApplicationSid": {""}, "SmsApplicationSid": {""}}
-	// A Messaging Service can override number webhooks. Refuse provisioning if
-	// its inbound routing cannot be corrected; do not silently leave SMS broken.
-	sidAccount, token := h.deps.Config.TwilioCredentials()
-	req, _ := http.NewRequestWithContext(ctx, "GET", "https://messaging.twilio.com/v1/Services?PageSize=1000", nil)
-	req.SetBasicAuth(sidAccount, token)
-	res, err := h.client.Do(req)
-	if err != nil {
-		return fmt.Errorf("Messaging Service ownership could not be checked")
-	}
-	defer res.Body.Close()
-	if res.StatusCode != 200 {
-		return fmt.Errorf("Messaging Services could not be checked")
-	}
-	var services struct {
-		Items []struct {
-			SID       string `json:"sid"`
-			UseNumber bool   `json:"use_inbound_webhook_on_number"`
-		} `json:"services"`
-		Meta struct {
-			Next string `json:"next_page_url"`
-		} `json:"meta"`
-	}
-	if json.NewDecoder(io.LimitReader(res.Body, 4<<20)).Decode(&services) != nil || services.Meta.Next != "" {
-		return fmt.Errorf("Messaging Service inventory is incomplete")
-	}
-	for _, service := range services.Items {
-		if !resourceSID.MatchString(service.SID) {
-			return fmt.Errorf("Invalid Messaging Service")
-		}
-		target := "https://messaging.twilio.com/v1/Services/" + service.SID + "/PhoneNumbers?PageSize=1000"
-		request, _ := http.NewRequestWithContext(ctx, "GET", target, nil)
-		request.SetBasicAuth(sidAccount, token)
-		response, err := h.client.Do(request)
-		if err != nil {
-			return fmt.Errorf("Messaging Service sender pool could not be checked")
-		}
-		var pool struct {
-			Items []struct {
-				SID string `json:"sid"`
-			} `json:"phone_numbers"`
-			Meta struct {
-				Next string `json:"next_page_url"`
-			} `json:"meta"`
-		}
-		decodeErr := json.NewDecoder(io.LimitReader(response.Body, 4<<20)).Decode(&pool)
-		response.Body.Close()
-		if response.StatusCode != 200 || decodeErr != nil || pool.Meta.Next != "" {
-			return fmt.Errorf("Messaging Service sender pool is incomplete")
-		}
-		for _, item := range pool.Items {
-			if item.SID == sid && !service.UseNumber {
-				if len(pool.Items) > 1 {
-					return fmt.Errorf("This number belongs to a shared Messaging Service. Enable number-level inbound webhooks in Twilio before assigning it")
-				}
-				if err = h.twilio(ctx, "POST", "@messaging/Services/"+service.SID, url.Values{"UseInboundWebhookOnNumber": {"true"}}, nil); err != nil {
-					return err
-				}
-			}
-		}
-	}
-	return h.twilio(ctx, "POST", "/IncomingPhoneNumbers/"+sid+".json", form, nil)
 }
 func (h *BusinessHandler) assign(ctx context.Context, d *models.Device, name, number, numberSID, credential, phonePassword string) error {
 	tx, err := h.deps.DB.Conn().BeginTx(ctx, nil)

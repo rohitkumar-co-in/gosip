@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { Plus, Edit2, Trash2, RefreshCw, Shield, User } from 'lucide-vue-next'
 import api from '@/api/client'
+import {dateTime} from '@/utils/display'
 
 interface UserRecord {
   id: number
@@ -68,7 +69,6 @@ async function handleSubmit() {
     if (editingUser.value) {
       const payload: Record<string, unknown> = {
         email: form.value.email,
-        name: form.value.name,
         role: form.value.role
       }
       if (form.value.password) {
@@ -76,7 +76,7 @@ async function handleSubmit() {
       }
       await api.put(`/users/${editingUser.value.id}`, payload)
     } else {
-      await api.post('/users', form.value)
+      await api.post('/users', {email:form.value.email,password:form.value.password,role:'admin'})
     }
     showModal.value = false
     await loadUsers()
@@ -101,7 +101,7 @@ async function handleDelete(user: UserRecord) {
 
 function formatDate(dateStr: string | undefined): string {
   if (!dateStr) return 'Never'
-  return new Date(dateStr).toLocaleString()
+  return dateTime(dateStr)
 }
 </script>
 

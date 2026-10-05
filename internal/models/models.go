@@ -1,4 +1,4 @@
-// Package models defines the domain models for GoSIP
+// Package models defines the domain models for Leadomi SIP
 package models
 
 import (
@@ -11,7 +11,7 @@ import (
 type User struct {
 	ID           int64      `json:"id"`
 	Email        string     `json:"email"`
-	PasswordHash string     `json:"-"` // Never serialize password hash
+	PasswordHash string     `json:"-"`    // Never serialize password hash
 	Role         string     `json:"role"` // "admin" or "user"
 	CreatedAt    time.Time  `json:"created_at"`
 	LastLogin    *time.Time `json:"last_login,omitempty"`
@@ -19,14 +19,14 @@ type User struct {
 
 // Device represents a registered SIP device (phone, softphone, etc.)
 type Device struct {
-	ID                 int64      `json:"id"`
-	UserID             *int64     `json:"user_id,omitempty"`
-	Name               string     `json:"name"`
-	Username           string     `json:"username"`
-	PasswordHash       string     `json:"-"`
-	DeviceType         string     `json:"device_type"` // "grandstream", "softphone", "webrtc"
-	RecordingEnabled   bool       `json:"recording_enabled"`
-	CreatedAt          time.Time  `json:"created_at"`
+	ID               int64     `json:"id"`
+	UserID           *int64    `json:"user_id,omitempty"`
+	Name             string    `json:"name"`
+	Username         string    `json:"username"`
+	PasswordHash     string    `json:"-"`
+	DeviceType       string    `json:"device_type"` // "grandstream", "softphone", "webrtc"
+	RecordingEnabled bool      `json:"recording_enabled"`
+	CreatedAt        time.Time `json:"created_at"`
 	// Provisioning fields
 	MACAddress         *string    `json:"mac_address,omitempty"`
 	Vendor             *string    `json:"vendor,omitempty"`
@@ -104,7 +104,7 @@ type CallerIDCondition struct {
 // RingAction represents action data for ringing devices
 type RingAction struct {
 	DeviceIDs []int64 `json:"device_ids"`
-	Timeout   int     `json:"timeout"` // seconds
+	Timeout   int     `json:"timeout"`  // seconds
 	Fallback  string  `json:"fallback"` // "voicemail", "forward", "reject"
 }
 
@@ -135,7 +135,7 @@ type CDR struct {
 	StartedAt    time.Time      `json:"started_at"`
 	AnsweredAt   *time.Time     `json:"answered_at,omitempty"`
 	EndedAt      *time.Time     `json:"ended_at,omitempty"`
-	Duration     int            `json:"duration"` // seconds
+	Duration     int            `json:"duration"`    // seconds
 	Disposition  string         `json:"disposition"` // "answered", "voicemail", "missed", "blocked", "busy", "failed"
 	RecordingURL sql.NullString `json:"recording_url,omitempty"`
 	SpamScore    *float64       `json:"spam_score,omitempty"`
@@ -156,17 +156,17 @@ type Voicemail struct {
 
 // Message represents an SMS/MMS message
 type Message struct {
-	ID          int64           `json:"id"`
-	MessageSID  string          `json:"message_sid,omitempty"`
-	Direction   string          `json:"direction"` // "inbound", "outbound"
-	FromNumber  string          `json:"from_number"`
-	ToNumber    string          `json:"to_number"`
-	DIDID       *int64          `json:"did_id,omitempty"`
-	Body        string          `json:"body,omitempty"`
-	MediaURLs   json.RawMessage `json:"media_urls,omitempty"`
-	Status      string          `json:"status,omitempty"`
-	CreatedAt   time.Time       `json:"created_at"`
-	IsRead      bool            `json:"is_read"`
+	ID         int64           `json:"id"`
+	MessageSID string          `json:"message_sid,omitempty"`
+	Direction  string          `json:"direction"` // "inbound", "outbound"
+	FromNumber string          `json:"from_number"`
+	ToNumber   string          `json:"to_number"`
+	DIDID      *int64          `json:"did_id,omitempty"`
+	Body       string          `json:"body,omitempty"`
+	MediaURLs  json.RawMessage `json:"media_urls,omitempty"`
+	Status     string          `json:"status,omitempty"`
+	CreatedAt  time.Time       `json:"created_at"`
+	IsRead     bool            `json:"is_read"`
 }
 
 // AutoReply represents an automatic reply rule
@@ -243,11 +243,11 @@ type ProvisioningRequest struct {
 
 // ProvisioningResponse represents the response from provisioning a device
 type ProvisioningResponse struct {
-	Device           *Device `json:"device"`
-	ProvisioningURL  string  `json:"provisioning_url,omitempty"`
-	Token            string  `json:"token,omitempty"`
-	TokenExpiresAt   string  `json:"token_expires_at,omitempty"`
-	SIPServer        string  `json:"sip_server"`
-	SIPPort          int     `json:"sip_port"`
-	ConfigInstructions string `json:"config_instructions,omitempty"`
+	Device             *Device `json:"device"`
+	ProvisioningURL    string  `json:"provisioning_url,omitempty"`
+	Token              string  `json:"token,omitempty"`
+	TokenExpiresAt     string  `json:"token_expires_at,omitempty"`
+	SIPServer          string  `json:"sip_server"`
+	SIPPort            int     `json:"sip_port"`
+	ConfigInstructions string  `json:"config_instructions,omitempty"`
 }

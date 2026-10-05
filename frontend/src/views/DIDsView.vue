@@ -91,7 +91,7 @@ async function handleSubmit() {
 }
 
 async function handleDelete(did: DID) {
-  if (!confirm(`Remove "${did.friendly_name || did.phone_number}" from GoSIP?\n\nThis will NOT release the number from your Twilio account.`)) return
+  if (!confirm(`Remove "${did.friendly_name || did.phone_number}" from Leadomi SIP?\n\nThis will NOT release the number from your Twilio account.`)) return
 
   try {
     await api.delete(`/dids/${did.id}`)

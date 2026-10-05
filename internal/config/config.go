@@ -1,4 +1,4 @@
-// Package config provides runtime configuration management for GoSIP
+// Package config provides runtime configuration management for Leadomi SIP
 package config
 
 import (
@@ -63,7 +63,7 @@ type ZRTPConfig struct {
 	CacheExpiryDays int
 }
 
-// Config holds the runtime configuration for GoSIP
+// Config holds the runtime configuration for Leadomi SIP
 type Config struct {
 	// Server settings
 	SIPPort          int

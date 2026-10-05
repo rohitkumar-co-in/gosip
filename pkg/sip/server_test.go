@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/btafoya/gosip/internal/models"
+	"github.com/rohitkumar-co-in/gosip/internal/models"
 )
 
 func TestNewServer(t *testing.T) {
@@ -14,7 +14,7 @@ func TestNewServer(t *testing.T) {
 
 	cfg := Config{
 		Port:      5060,
-		UserAgent: "GoSIP-Test/1.0",
+		UserAgent: "Leadomi SIP-Test/1.0",
 	}
 
 	server, err := NewServer(cfg, database)
@@ -30,8 +30,8 @@ func TestNewServer(t *testing.T) {
 	if server.cfg.Port != 5060 {
 		t.Errorf("Port mismatch: got %d, want 5060", server.cfg.Port)
 	}
-	if server.cfg.UserAgent != "GoSIP-Test/1.0" {
-		t.Errorf("UserAgent mismatch: got %s, want GoSIP-Test/1.0", server.cfg.UserAgent)
+	if server.cfg.UserAgent != "Leadomi SIP-Test/1.0" {
+		t.Errorf("UserAgent mismatch: got %s, want Leadomi SIP-Test/1.0", server.cfg.UserAgent)
 	}
 
 	// Verify components are initialized
@@ -62,7 +62,7 @@ func TestServer_IsRunning(t *testing.T) {
 
 	cfg := Config{
 		Port:      5060,
-		UserAgent: "GoSIP-Test/1.0",
+		UserAgent: "Leadomi SIP-Test/1.0",
 	}
 
 	server, err := NewServer(cfg, database)
@@ -99,7 +99,7 @@ func TestServer_ActiveCallCount(t *testing.T) {
 
 	cfg := Config{
 		Port:      5060,
-		UserAgent: "GoSIP-Test/1.0",
+		UserAgent: "Leadomi SIP-Test/1.0",
 	}
 
 	server, err := NewServer(cfg, database)
@@ -145,7 +145,7 @@ func TestServer_CallCountConcurrency(t *testing.T) {
 
 	cfg := Config{
 		Port:      5060,
-		UserAgent: "GoSIP-Test/1.0",
+		UserAgent: "Leadomi SIP-Test/1.0",
 	}
 
 	server, err := NewServer(cfg, database)
@@ -191,7 +191,7 @@ func TestServer_Stop(t *testing.T) {
 
 	cfg := Config{
 		Port:      5060,
-		UserAgent: "GoSIP-Test/1.0",
+		UserAgent: "Leadomi SIP-Test/1.0",
 	}
 
 	server, err := NewServer(cfg, database)
@@ -233,7 +233,7 @@ func TestServer_StopIdempotent(t *testing.T) {
 
 	cfg := Config{
 		Port:      5060,
-		UserAgent: "GoSIP-Test/1.0",
+		UserAgent: "Leadomi SIP-Test/1.0",
 	}
 
 	server, err := NewServer(cfg, database)
@@ -263,7 +263,7 @@ func TestServer_GetRegistrar(t *testing.T) {
 
 	cfg := Config{
 		Port:      5060,
-		UserAgent: "GoSIP-Test/1.0",
+		UserAgent: "Leadomi SIP-Test/1.0",
 	}
 
 	server, err := NewServer(cfg, database)
@@ -287,7 +287,7 @@ func TestServer_GetActiveRegistrations(t *testing.T) {
 
 	cfg := Config{
 		Port:      5060,
-		UserAgent: "GoSIP-Test/1.0",
+		UserAgent: "Leadomi SIP-Test/1.0",
 	}
 
 	server, err := NewServer(cfg, database)
@@ -406,4 +406,3 @@ func TestRegistrationInfo(t *testing.T) {
 		t.Error("Online should be true")
 	}
 }
-

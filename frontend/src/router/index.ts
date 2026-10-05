@@ -54,13 +54,14 @@ const router = createRouter({
         {
           path: 'calls',
           name: 'calls',
-          component: () => import('@/views/CallsView.vue')
+          component: () => import('@/views/ActivityView.vue')
         },
         {
           path: 'call-control',
           name: 'call-control',
           redirect: '/devices'
         },
+        {path:'activity',name:'activity',component:()=>import('@/views/ActivityView.vue')},
         {
           path: 'messages',
           name: 'messages',

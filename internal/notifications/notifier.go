@@ -11,9 +11,9 @@ import (
 	"net/smtp"
 	"time"
 
-	"github.com/btafoya/gosip/internal/config"
-	"github.com/btafoya/gosip/internal/db"
-	"github.com/btafoya/gosip/internal/models"
+	"github.com/rohitkumar-co-in/gosip/internal/config"
+	"github.com/rohitkumar-co-in/gosip/internal/db"
+	"github.com/rohitkumar-co-in/gosip/internal/models"
 )
 
 // Notifier handles all notification types (email, push, webhooks)
@@ -66,14 +66,14 @@ Time: %s
 
 Listen to this voicemail at: %s
 `, voicemail.FromNumber, didNumber, voicemail.Duration,
-	voicemail.CreatedAt.Format("Jan 2, 2006 3:04 PM"),
-	func() string {
-		if voicemail.Transcript != "" {
-			return "Transcription:\n" + voicemail.Transcript
-		}
-		return ""
-	}(),
-	voicemail.AudioURL)
+		voicemail.CreatedAt.Format("Jan 2, 2006 3:04 PM"),
+		func() string {
+			if voicemail.Transcript != "" {
+				return "Transcription:\n" + voicemail.Transcript
+			}
+			return ""
+		}(),
+		voicemail.AudioURL)
 
 	// Send email notification - get notification email from database config
 	if n.cfg.SMTPHost != "" {

@@ -1,4 +1,4 @@
-// Package main is the entry point for the GoSIP application
+// Package main is the entry point for the Leadomi SIP application
 package main
 
 import (
@@ -53,7 +53,7 @@ func TestVersionString(t *testing.T) {
 	if version == "" {
 		t.Error("Version should not be empty")
 	}
-	t.Logf("GoSIP Version: %s", version)
+	t.Logf("Leadomi SIP Version: %s", version)
 }
 
 // TestDefaultPorts verifies expected port configuration

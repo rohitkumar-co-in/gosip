@@ -10,10 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/btafoya/gosip/internal/config"
-	"github.com/btafoya/gosip/internal/models"
-	"github.com/btafoya/gosip/pkg/sip"
 	"github.com/go-chi/chi/v5"
+	"github.com/rohitkumar-co-in/gosip/internal/config"
+	"github.com/rohitkumar-co-in/gosip/internal/models"
+	"github.com/rohitkumar-co-in/gosip/pkg/sip"
 )
 
 type businessTransport func(*http.Request) (*http.Response, error)
@@ -118,7 +118,22 @@ func TestBusinessProvisioningLifecycle(t *testing.T) {
 		router.ServeHTTP(rec, req)
 		return rec
 	}
-	result := invoke("POST", "/accounts", `{"name":"Employee","username":"employee","number":"+442345678901"}`)
+	blocked := invoke("POST", "/accounts", `{"name":"Employee","username":"employee","number":"+442345678901"}`)
+	assertStatus(t, blocked, 409)
+	if credentialExists || numberUpdated {
+		t.Fatal("Unreviewed assignment wrote provider configuration")
+	}
+	var count int
+	setup.DB.Conn().QueryRow("SELECT COUNT(*) FROM devices WHERE username='employee'").Scan(&count)
+	if count != 0 {
+		t.Fatal("Unreviewed assignment created a local user")
+	}
+	numbers, _ := h.numbers(ctx)
+	review, reviewErr := h.reviewNumber(ctx, numbers[0])
+	if reviewErr != nil {
+		t.Fatal(reviewErr)
+	}
+	result := invoke("POST", "/accounts", fmt.Sprintf(`{"name":"Employee","username":"employee","number":"+442345678901","number_review":%q}`, review.Fingerprint))
 	assertStatus(t, result, 200)
 	var response struct {
 		ID       int64  `json:"id"`
@@ -149,19 +164,26 @@ func TestBusinessProvisioningLifecycle(t *testing.T) {
 	assertStatus(t, conflict, 409)
 	owned := invoke("POST", "/accounts", `{"name":"Other","username":"other","number":"+442345678902"}`)
 	assertStatus(t, owned, 400)
+	// Ordinary edits and phone password changes must not write Twilio or PBX credentials.
 	failPBX = true
-	failed := invoke("PUT", fmt.Sprintf("/accounts/%d", response.ID), `{"name":"Employee","number":"+442345678901"}`)
-	assertStatus(t, failed, 502)
-	if _, err := deviceOutboundNumber(ctx, deps, "employee"); err == nil {
-		t.Fatal("Partially provisioned account must fail closed")
+	previousCredential := credentialPassword
+	numberUpdated = false
+	edited := invoke("PUT", fmt.Sprintf("/accounts/%d", response.ID), `{"name":"Renamed","number":"+442345678901"}`)
+	assertStatus(t, edited, 200)
+	if numberUpdated || credentialPassword != previousCredential {
+		t.Fatal("Ordinary edit changed an existing provider connection")
+	}
+	custom := "CustomPhonePassword123!"
+	changed := invoke("PUT", fmt.Sprintf("/accounts/%d", response.ID), fmt.Sprintf(`{"name":"Renamed","number":"+442345678901","reset_password":true,"password":%q}`, custom))
+	assertStatus(t, changed, 200)
+	device, _ = setup.DB.Devices.GetByID(ctx, response.ID)
+	if device.PasswordHash != sip.GenerateHA1("employee", "gosip", custom) {
+		t.Fatal("Custom password was not hashed")
+	}
+	if numberUpdated || credentialPassword != previousCredential {
+		t.Fatal("Phone password reset changed Twilio credentials")
 	}
 	failPBX = false
-	retried := invoke("PUT", fmt.Sprintf("/accounts/%d", response.ID), `{"name":"Employee","number":"+442345678901"}`)
-	assertStatus(t, retried, 200)
-	device, _ = setup.DB.Devices.GetByID(ctx, response.ID)
-	if device.PasswordHash != sip.GenerateHA1("employee", "gosip", response.Password) {
-		t.Fatal("Retry unexpectedly reset phone password")
-	}
 	disabled := invoke("POST", fmt.Sprintf("/accounts/%d/disable", response.ID), "")
 	assertStatus(t, disabled, 200)
 	if credentialExists {

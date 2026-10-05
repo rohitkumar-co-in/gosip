@@ -48,20 +48,20 @@ func (e *WAVValidationError) Error() string {
 
 // Validation error codes
 const (
-	ErrCodeInvalidFormat    = "INVALID_FORMAT"
-	ErrCodeUnsupportedCodec = "UNSUPPORTED_CODEC"
+	ErrCodeInvalidFormat     = "INVALID_FORMAT"
+	ErrCodeUnsupportedCodec  = "UNSUPPORTED_CODEC"
 	ErrCodeInvalidSampleRate = "INVALID_SAMPLE_RATE"
-	ErrCodeInvalidBitDepth  = "INVALID_BIT_DEPTH"
-	ErrCodeInvalidChannels  = "INVALID_CHANNELS"
-	ErrCodeFileTooLarge     = "FILE_TOO_LARGE"
-	ErrCodeFileTooShort     = "FILE_TOO_SHORT"
-	ErrCodeFileTooLong      = "FILE_TOO_LONG"
-	ErrCodeCorruptFile      = "CORRUPT_FILE"
+	ErrCodeInvalidBitDepth   = "INVALID_BIT_DEPTH"
+	ErrCodeInvalidChannels   = "INVALID_CHANNELS"
+	ErrCodeFileTooLarge      = "FILE_TOO_LARGE"
+	ErrCodeFileTooShort      = "FILE_TOO_SHORT"
+	ErrCodeFileTooLong       = "FILE_TOO_LONG"
+	ErrCodeCorruptFile       = "CORRUPT_FILE"
 )
 
 // WAVHeader represents the parsed WAV file header
 type WAVHeader struct {
-	AudioFormat   uint16  // 1 = PCM, 3 = IEEE float, etc.
+	AudioFormat   uint16 // 1 = PCM, 3 = IEEE float, etc.
 	NumChannels   uint16
 	SampleRate    uint32
 	ByteRate      uint32
@@ -80,11 +80,11 @@ func (h *WAVHeader) Duration() float64 {
 
 // WAVValidationResult contains the validation outcome
 type WAVValidationResult struct {
-	Valid         bool       `json:"valid"`
-	Header        *WAVHeader `json:"header,omitempty"`
-	Duration      float64    `json:"duration,omitempty"`
-	Error         *WAVValidationError `json:"error,omitempty"`
-	Warnings      []string   `json:"warnings,omitempty"`
+	Valid    bool                `json:"valid"`
+	Header   *WAVHeader          `json:"header,omitempty"`
+	Duration float64             `json:"duration,omitempty"`
+	Error    *WAVValidationError `json:"error,omitempty"`
+	Warnings []string            `json:"warnings,omitempty"`
 }
 
 // ValidateWAV validates a WAV file from a reader

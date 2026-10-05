@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/btafoya/gosip/internal/config"
-	"github.com/btafoya/gosip/internal/models"
+	"github.com/rohitkumar-co-in/gosip/internal/config"
+	"github.com/rohitkumar-co-in/gosip/internal/models"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -216,8 +216,8 @@ func (h *SystemHandler) SetupWizard(w http.ResponseWriter, r *http.Request) {
 	} else if !strings.Contains(req.AdminEmail, "@") {
 		errors = append(errors, FieldError{Field: "admin_email", Message: "Invalid email format"})
 	}
-	if len(req.AdminPassword) < 8 {
-		errors = append(errors, FieldError{Field: "admin_password", Message: "Admin password must be at least 8 characters"})
+	if len(req.AdminPassword) < 12 || len(req.AdminPassword) > 72 {
+		errors = append(errors, FieldError{Field: "admin_password", Message: "Admin password must contain 12 to 72 characters"})
 	}
 
 	if len(errors) > 0 {

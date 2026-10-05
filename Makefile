@@ -1,4 +1,4 @@
-# GoSIP Makefile
+# Leadomi SIP Makefile
 # SIP-to-Twilio Bridge PBX
 
 .PHONY: all build run dev test lint clean docker docker-dev help
@@ -30,7 +30,7 @@ build-linux: ## Build for Linux (cross-compile)
 
 ## Run commands
 run: build-backend ## Run the application
-	@echo "Running GoSIP..."
+	@echo "Running Leadomi SIP..."
 	./bin/$(BINARY_NAME)
 
 dev: ## Run in development mode with hot reload
@@ -187,7 +187,7 @@ release: test lint build ## Build release artifacts
 
 ## Help
 help: ## Show this help
-	@echo "GoSIP - SIP-to-Twilio Bridge PBX"
+	@echo "Leadomi SIP - SIP-to-Twilio Bridge PBX"
 	@echo ""
 	@echo "Usage: make [target]"
 	@echo ""

@@ -1,5 +1,5 @@
 [Unit]
-Description=GoSIP business database and PBX backup
+Description=Leadomi SIP business database and PBX backup
 After=docker.service
 Requires=docker.service
 

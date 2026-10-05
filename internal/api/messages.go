@@ -8,10 +8,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/btafoya/gosip/internal/config"
-	"github.com/btafoya/gosip/internal/db"
-	"github.com/btafoya/gosip/internal/models"
 	"github.com/go-chi/chi/v5"
+	"github.com/rohitkumar-co-in/gosip/internal/config"
+	"github.com/rohitkumar-co-in/gosip/internal/db"
+	"github.com/rohitkumar-co-in/gosip/internal/models"
 )
 
 // MessageHandler handles SMS/MMS message API endpoints
@@ -211,6 +211,16 @@ func (h *MessageHandler) Send(w http.ResponseWriter, r *http.Request) {
 	if err := h.deps.DB.Messages.Create(r.Context(), message); err != nil {
 		WriteInternalError(w)
 		return
+	}
+
+	actor, _ := r.Context().Value(messageActorKey{}).(string)
+	if actor == "" {
+		if user := GetUserFromContext(r.Context()); user != nil {
+			actor = "Administrator: " + user.Email
+		}
+	}
+	if actor != "" {
+		h.deps.DB.Conn().ExecContext(r.Context(), "UPDATE activity_actors SET actor=? WHERE kind='sms' AND record_id=?", actor, message.ID)
 	}
 
 	// Send via Twilio (async - queue for sending)

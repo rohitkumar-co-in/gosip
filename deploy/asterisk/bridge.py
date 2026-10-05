@@ -1,6 +1,6 @@
 """Asterisk lifecycle, authenticated FastAGI SMS, and persistent inbound delivery.
 
-The GoSIP database is read-only here. Twilio API credentials never enter this
+The Leadomi SIP database is read-only here. Twilio API credentials never enter this
 container. Each endpoint has its own message context: sender identity cannot
 be forged by changing a SIP From header or an arbitrary MESSAGE header.
 """
@@ -90,7 +90,7 @@ def render(devices, device_numbers=None):
     trunk_password = safe(device_passwords.get(trunk_user, trunk_password))
     pjsip = f"""[global]
 type=global
-user_agent=GoSIP-Asterisk
+user_agent=Leadomi SIP-Asterisk
 endpoint_identifier_order=ip,username
 default_realm=gosip
 max_forwards=70
@@ -426,7 +426,7 @@ class AGI(socketserver.StreamRequestHandler):
             LOG.warning("SMS bridge request failed (message contents omitted)")
             try:
                 deliver(username, os.environ["GOSIP_OUTBOUND_CALLER_ID"],
-                        "SMS to " + number + " could not be queued. Check GoSIP and try again.")
+                        "SMS to " + number + " could not be queued. Check Leadomi SIP and try again.")
             except Exception:
                 pass
 
@@ -555,7 +555,7 @@ def main():
                             if status[0] == "delivered":
                                 queue.execute("UPDATE outbound SET notified=1 WHERE message_id=?", (sent[0],))
                             elif sent[1] in online:
-                                deliver(sent[1], os.environ["GOSIP_OUTBOUND_CALLER_ID"], "SMS to " + sent[2] + " failed to deliver. Check the message status in GoSIP before retrying.")
+                                deliver(sent[1], os.environ["GOSIP_OUTBOUND_CALLER_ID"], "SMS to " + sent[2] + " failed to deliver. Check the message status in Leadomi SIP before retrying.")
                                 queue.execute("UPDATE outbound SET notified=1 WHERE message_id=?", (sent[0],))
                     queue.commit()
                 for msg in queue.execute("SELECT * FROM deliveries WHERE delivered=0 LIMIT 100").fetchall():

@@ -16,20 +16,20 @@ func NewMWIHandler(deps *Dependencies) *MWIHandler {
 
 // MWIStatusResponse represents the MWI status
 type MWIStatusResponse struct {
-	Enabled            bool                    `json:"enabled"`
-	SubscriptionCount  int                     `json:"subscription_count"`
-	States             []MWIStateResponse      `json:"states"`
-	Subscriptions      []MWISubscriptionResponse `json:"subscriptions"`
+	Enabled           bool                      `json:"enabled"`
+	SubscriptionCount int                       `json:"subscription_count"`
+	States            []MWIStateResponse        `json:"states"`
+	Subscriptions     []MWISubscriptionResponse `json:"subscriptions"`
 }
 
 // MWIStateResponse represents mailbox state
 type MWIStateResponse struct {
-	AOR          string `json:"aor"`
-	NewMessages  int    `json:"new_messages"`
-	OldMessages  int    `json:"old_messages"`
-	NewUrgent    int    `json:"new_urgent"`
-	OldUrgent    int    `json:"old_urgent"`
-	LastUpdated  string `json:"last_updated"`
+	AOR         string `json:"aor"`
+	NewMessages int    `json:"new_messages"`
+	OldMessages int    `json:"old_messages"`
+	NewUrgent   int    `json:"new_urgent"`
+	OldUrgent   int    `json:"old_urgent"`
+	LastUpdated string `json:"last_updated"`
 }
 
 // MWISubscriptionResponse represents an MWI subscription

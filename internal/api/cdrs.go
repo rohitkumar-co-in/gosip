@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/btafoya/gosip/internal/config"
-	"github.com/btafoya/gosip/internal/db"
 	"github.com/go-chi/chi/v5"
+	"github.com/rohitkumar-co-in/gosip/internal/config"
+	"github.com/rohitkumar-co-in/gosip/internal/db"
 )
 
 // CDRHandler handles CDR (Call Detail Record) API endpoints

@@ -1,0 +1,75 @@
+services:
+  gosip:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - gosip-data:/app/data
+    environment:
+      GOSIP_DATA_DIR: /app/data
+      GOSIP_HTTP_PORT: "8080"
+      GOSIP_SIP_PORT: "5060"
+      GOSIP_CORS_ORIGINS: ${GOSIP_CORS_ORIGINS}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_SIP_DOMAIN: ${TWILIO_SIP_DOMAIN:-}
+      GOSIP_OUTBOUND_CALLER_ID: ${GOSIP_OUTBOUND_CALLER_ID:-}
+      GOSIP_PUBLIC_URL: ${GOSIP_PUBLIC_URL:-}
+      GOSIP_PBX_URL: ${GOSIP_PBX_URL:-}
+      GOSIP_PBX_SECRET: ${GOSIP_PBX_SECRET:-}
+      GOSIP_PBX_SIP_DOMAIN: ${GOSIP_PBX_SIP_DOMAIN:-}
+      GOSIP_PBX_TRUNK_USER: ${GOSIP_PBX_TRUNK_USER:-}
+      GOSIP_PBX_TRUNK_PASSWORD: ${GOSIP_PBX_TRUNK_PASSWORD:-}
+      TZ: ${TZ:-America/New_York}
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  pbx:
+    build:
+      context: .
+      dockerfile: deploy/asterisk/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5061:5061/tcp"
+      - "10000-10100:10000-10100/udp"
+    expose:
+      - "8088"
+    volumes:
+      - gosip-data:/gosip:ro
+      - pbx-data:/var/lib/gosip-pbx
+      - /data/gosip-pbx/certs:/certs:ro
+    environment:
+      GOSIP_URL: http://gosip:8080
+      # Coolify injects the application's .env into each service. Override
+      # Empty literals are filled from Coolify's saved values; null inherits
+      # the app's .env. An empty alias reliably excludes API credentials.
+      TWILIO_ACCOUNT_SID: ${GOSIP_PBX_UNUSED_API_CREDENTIAL:-}
+      TWILIO_AUTH_TOKEN: ${GOSIP_PBX_UNUSED_API_CREDENTIAL:-}
+      GOSIP_PBX_SECRET: ${GOSIP_PBX_SECRET}
+      GOSIP_PBX_TRUNK_USER: ${GOSIP_PBX_TRUNK_USER}
+      GOSIP_PBX_TRUNK_PASSWORD: ${GOSIP_PBX_TRUNK_PASSWORD}
+      GOSIP_OUTBOUND_CALLER_ID: ${GOSIP_OUTBOUND_CALLER_ID}
+      PBX_DOMAIN: ${PBX_DOMAIN}
+      PBX_PUBLIC_IP: ${PBX_PUBLIC_IP}
+      TWILIO_SIP_DOMAIN: ${TWILIO_SIP_DOMAIN}
+      PBX_TWILIO_USER: ${PBX_TWILIO_USER}
+      PBX_TWILIO_PASSWORD: ${PBX_TWILIO_PASSWORD}
+      PBX_TWILIO_DEVICE_PASSWORDS: ${PBX_TWILIO_DEVICE_PASSWORDS:-}
+      PBX_TWILIO_NETWORKS: "54.172.60.0/30,54.244.51.0/30,54.171.127.192/30,35.156.191.128/30,54.65.63.192/30,54.169.127.128/30,54.252.254.64/30,177.71.206.192/30"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8088/health',timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+
+volumes:
+  pbx-data:
+  gosip-data:

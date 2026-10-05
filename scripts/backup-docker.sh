@@ -1,8 +1,8 @@
 #!/bin/bash
 #
-# GoSIP Docker Backup Script
+# Leadomi SIP Docker Backup Script
 #
-# This script creates backups of the GoSIP database and media files
+# This script creates backups of the Leadomi SIP database and media files
 # when running in a Docker container.
 #
 # Usage:
@@ -66,7 +66,7 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --help)
-            echo "GoSIP Docker Backup Script"
+            echo "Leadomi SIP Docker Backup Script"
             echo ""
             echo "Usage: $0 [options] [container-name]"
             echo ""
@@ -93,7 +93,7 @@ done
 mkdir -p "$BACKUP_DIR"
 
 log "=========================================="
-log "GoSIP Docker Backup Starting"
+log "Leadomi SIP Docker Backup Starting"
 log "=========================================="
 log "Container: $CONTAINER_NAME"
 log "Backup directory: $BACKUP_DIR"

@@ -1,97 +1,57 @@
-# Business phone system
+# Leadomi SIP business operations
 
-The deployed system uses Asterisk for TLS SIP and SRTP audio, GoSIP for the
-administrator console and SMS bridge, and Twilio for telephone calls and SMS.
-Each SIP user has one registered phone and one assigned Twilio number.
+The supported deployment uses Asterisk for SIP/media, the Go backend for the
+administrator console and SMS bridge, and Twilio for carrier calls/SMS. Each
+SIP user has one owned assigned number and one registered phone.
 
-Build images use Node 24 LTS and Go 1.26; the app runtime uses Alpine 3.23.
-Release support references: [Node](https://github.com/nodejs/Release),
-[Go](https://go.dev/doc/go1.26), [Alpine](https://alpinelinux.org/releases/).
-Keep these images and OS packages patched through regular tested deployments.
+## Daily operations
 
-## Add or change a phone user
+Check **Dashboard** for PBX health, provider credentials configured, last daily
+backup and recent configuration changes. Review **Activity Log** for failed
+calls or messages with direction, from/to, actor and timestamp. Incoming actor
+labels identify the receiving account; they are not read receipts or proof of
+who answered. Historical records without captured actor data stay unknown.
 
-1. Open **SIP Users**, then **Add SIP user**.
-2. Enter a name and a unique SIP username; choose an existing Twilio number
-   with voice and SMS capability. Active users cannot share a number.
-3. Save. The server adds a SIP credential to its dedicated Twilio credential
-   list, saves the separate outbound credential in the private PBX volume,
-   updates the selected number's webhooks and its default incoming route,
-   and assigns its outgoing caller ID and SMS sender.
-4. Download the phone setup file before closing the credential panel.
-   The generated phone password is shown once and stored only as a SIP hash.
-5. In Linphone, use the generated SIP identity and set **both** Registrar URI
-   and Outbound SIP Proxy URI to `sip:sip.leadomi.com:5061;transport=tls`.
-   Enable SRTP and disable CPIM in basic conversations.
+Use **SIP Users** for [reviewed assignments](ADMINISTRATION.md), phone-password
+reset or disabling. Ready users edited with the same number retain their
+Twilio credentials and number routes. Inventory/startup/login do not configure
+numbers. Never use re-provisioning as a substitute for reconnecting a phone.
 
-Configuration applies within 10 seconds. Calls use full international `+numbers`;
-SMS recipients use `sip:+number@sip.leadomi.com`.
+## Usage and access controls
 
-**Edit / reset password** can reassign a number or generate a new phone password.
-Changing a number replaces its default routing rules. **Disable** blocks new
-calls and messages, removes the phone endpoint and revokes its Twilio credential.
-A call already in progress can continue. History is kept. A disabled user's
-number can be assigned to a replacement user; it is not released from Twilio.
+Only trusted web administrators can access business-wide history. Phone users
+do not need a web account. Administrator password changes revoke old sessions.
+Twilio API credentials stay in backend runtime environment.
 
-Failed provisioning is marked **error**, and that account fails closed until
-**Configure / retry** succeeds. External API writes and local database writes
-cannot share a transaction. A retry checks for an existing Twilio username and
-updates it rather than creating duplicates. If a newly created account failed
-before showing its password, retry generates a fresh phone password.
+**Settings** restricts outgoing E.164 prefixes (`+44`, `+91`, etc.) and the
+SMS-per-minute submission limit (default20 per number). Empty prefixes allow
+all destinations. Asterisk permits two concurrent outgoing calls per SIP user.
+Configure Twilio spend/usage alerts separately: these controls are not a
+monetary budget cap. Disabled users retain history and their Twilio number;
+an already connected call can continue.
 
-Numbers in a shared Twilio Messaging Service require number-level inbound
-webhooks to be enabled already; provisioning will not change a shared service's
-policy automatically. Number purchase and porting remain in the Twilio console.
+## Updates and incidents
 
-## Access and usage controls
+Build images use Node24, Go1.26 and Alpine3.23; Asterisk uses Ubuntu24.04 package
+updates. Keep dependency/OS updates tested. Use the same app and volumes for
+updates, back up first, and verify existing callback mappings read-only after
+restart. Reopen Linphone and perform manual paid tests when appropriate.
 
-Phone users do not need a web console account. **Administrators** controls web
-console access, which includes all employees' message and call history. Only
-trusted administrators should receive that access. Account password changes
-revoke existing sessions immediately. New administrator passwords require
-12–72 characters. The Twilio Account SID and Auth Token remain in Coolify's
-environment; they are not sent to phones or stored in SQLite.
+If provisioning fails, inspect its visible state and audit before retrying.
+Twilio and SQLite cannot share a transaction, so partial provider state may
+exist. Assignment never edits a Messaging Service inbound policy automatically;
+an overriding service blocks it. Failed credential revocation requires a
+Disable retry. Do not expose private SIP traces or container environments in
+public logs because they can contain secrets.
 
-In **Settings**, restrict outgoing calls and SMS to the international prefixes
-your business needs, for example `+44, +91`. An empty list allows all destinations.
-SMS defaults to 20 submissions per minute per sending number, and each SIP user
-is limited to two concurrent outgoing calls. These limits are not a monetary
-spending cap. Configure Twilio usage alerts and account spending controls in
-Twilio separately.
+## Recovery and limitations
 
-Removed console options include the old manual device wizard, SIP trunk editor,
-WebRTC/browser calling and call-control UI that do not control this Asterisk
-deployment. Call routing, call/SMS history and voicemail remain available.
+Daily root-only [backups](BACKUP.md) keep30days and record success in the
+dashboard. Verify an isolated restore periodically. Off-server storage is
+currently unconfigured and must be arranged separately. One VPS is not a
+redundant phone service. Retain Coolify environment and TLS/DNS recovery access.
 
-## Backups and recovery
-
-`gosip-backup.timer` runs the root-only `scripts/business-backup.py` daily at
-02:15 UTC (07:45 IST), with up to five minutes of scheduling jitter. Archives are
-kept for 30 days under `/var/backups/gosip` (directory 0700, files 0600). Each
-contains online SQLite snapshots of `gosip.db` and `delivery.db` plus the PBX SIP
-credential map, including credentials originally supplied through environment.
-SQLite integrity is checked before each archive is accepted. Dashboard shows
-the last successful daily backup. On-demand database backups are separate and
-can be created and verified in the dashboard.
-
-For full recovery, retain the Coolify application configuration and its environment
-separately, along with access to the DNS account. The backup archive does not
-contain the Twilio API Auth Token or incoming-trunk secret. Export archives to
-an access-controlled off-server location: copies on the same VPS do not protect
-against loss of that VPS. No off-server destination has been configured.
-
-To validate a restore, extract only the three expected archive members into a
-private temporary directory, run `PRAGMA integrity_check` on both databases and
-validate the credential JSON. For an actual restore, stop both application
-containers, preserve current volumes, restore `gosip.db` to the GoSIP volume and
-`delivery.db` and `credentials.json` to the PBX volume, all with mode 0600. Recreate
-containers from the matching Git revision and Coolify environment, renew/export
-TLS certificates, and verify webhooks and phone registrations. Twilio is external:
-compare its current number webhooks and credential list with the restored state
-before enabling calls. Do not restore a database into a running application.
-
-This is one VPS with persistent local volumes, not a redundant phone service.
-Android background restrictions can delay ringing or messages while Linphone is
-closed; keep it connected and allow background activity. Offline SMS is queued;
-delivery acceptance is tracked, but read receipts/typing notifications are not
-supported. Calls and messages should be tested manually after a deployment.
+Android background restrictions can delay ringing/messages. Offline SMS is
+queued; delivery acceptance is not a read receipt. MMS on mobile SIP clients,
+browser WebRTC, conferences and transfer controls are not supported here.
+No automatic paid call or SMS tests are needed for deployment checks.

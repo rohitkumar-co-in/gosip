@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/btafoya/gosip/internal/models"
+	"github.com/rohitkumar-co-in/gosip/internal/models"
 )
 
 // WebhookHandler handles Twilio webhook callbacks
@@ -533,6 +533,9 @@ func (h *WebhookHandler) executeAction(ctx context.Context, route *models.Route,
 			Number string `json:"number"`
 		}
 		if err := json.Unmarshal(route.ActionData, &data); err == nil {
+			if h.deps.Config.PBXURL != "" && (!e164Destination.MatchString(data.Number) || !businessDestinationAllowed(ctx, h.deps, data.Number)) {
+				return h.errorTwiML("Forwarding destination is blocked by your business usage policy")
+			}
 			return `<Response>
 				<Dial callerId="` + escapeXML(did.Number) + `">
 					<Number>` + escapeXML(data.Number) + `</Number>

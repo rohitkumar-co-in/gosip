@@ -137,7 +137,7 @@ async function provisionDevice() {
       token: result.token.token,
       expires_at: result.token.expires_at,
       qr_code: qrCode,
-      instructions: `Configure your ${selectedProfile.value?.vendor || 'device'} to use the provisioning URL above, or manually configure:\n\nSIP Server: Your GoSIP server\nUsername: ${selectedDevice.value.extension}\nPassword: Your device password`
+      instructions: `Configure your ${selectedProfile.value?.vendor || 'device'} to use the provisioning URL above, or manually configure:\n\nSIP Server: Your Leadomi SIP server\nUsername: ${selectedDevice.value.extension}\nPassword: Your device password`
     }
     wizardStep.value = 3
     await loadData() // Refresh tokens and events

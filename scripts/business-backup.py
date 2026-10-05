@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Root-only daily backups of GoSIP SQLite and private Asterisk state.
+"""Root-only daily backups of Leadomi SIP SQLite and private Asterisk state.
 
 Uses SQLite's online backup API; never copies a live database or prints secrets.
 Restore into a separate directory and verify before touching running volumes.
@@ -20,7 +20,8 @@ root = Path('/var/backups/gosip')
 root.mkdir(mode=0o700, parents=True, exist_ok=True)
 root.chmod(0o700)
 names = subprocess.check_output(['docker', 'ps', '--format', '{{.Names}}'], text=True).splitlines()
-matches = [n for n in names if n.startswith('pbx-zgzcndvsggqprdlnm503jmpu')]
+prefix = os.getenv('PBX_CONTAINER_PREFIX', 'pbx-zgzcndvsggqprdlnm503jmpu')
+matches = [n for n in names if n.startswith(prefix)]
 if len(matches) != 1:
     raise SystemExit('Expected exactly one production PBX container')
 pbx = matches[0]

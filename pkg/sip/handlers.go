@@ -7,9 +7,9 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/btafoya/gosip/internal/config"
-	"github.com/btafoya/gosip/internal/models"
 	"github.com/emiago/sipgo/sip"
+	"github.com/rohitkumar-co-in/gosip/internal/config"
+	"github.com/rohitkumar-co-in/gosip/internal/models"
 )
 
 // handleRegister processes REGISTER requests

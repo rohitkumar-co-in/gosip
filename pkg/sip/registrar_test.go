@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/btafoya/gosip/internal/models"
+	"github.com/rohitkumar-co-in/gosip/internal/models"
 )
 
 func TestNewRegistrar(t *testing.T) {

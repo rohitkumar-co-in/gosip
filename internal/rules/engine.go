@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/btafoya/gosip/internal/db"
-	"github.com/btafoya/gosip/internal/models"
+	"github.com/rohitkumar-co-in/gosip/internal/db"
+	"github.com/rohitkumar-co-in/gosip/internal/models"
 )
 
 // Engine evaluates call routing rules and determines actions
@@ -40,10 +40,10 @@ type CallContext struct {
 
 // Action represents the action to take for a call
 type Action struct {
-	Type       string          // ring, forward, voicemail, reject
-	Data       json.RawMessage // Action-specific data
-	RouteName  string          // Name of the matching route for logging
-	Priority   int             // Priority of the matching rule
+	Type      string          // ring, forward, voicemail, reject
+	Data      json.RawMessage // Action-specific data
+	RouteName string          // Name of the matching route for logging
+	Priority  int             // Priority of the matching rule
 }
 
 // RingAction contains data for the "ring" action
@@ -124,9 +124,9 @@ func (e *Engine) evaluateCondition(route *models.Route, callCtx *CallContext) bo
 
 // CallerIDCondition defines caller ID matching rules
 type CallerIDCondition struct {
-	Pattern     string `json:"pattern"`
-	MatchType   string `json:"match_type"` // exact, contains, prefix, regex
-	Anonymous   bool   `json:"anonymous"`  // Match anonymous/blocked callers
+	Pattern   string `json:"pattern"`
+	MatchType string `json:"match_type"` // exact, contains, prefix, regex
+	Anonymous bool   `json:"anonymous"`  // Match anonymous/blocked callers
 }
 
 func (e *Engine) evaluateCallerIDCondition(data json.RawMessage, callerID string) bool {
@@ -170,11 +170,11 @@ func (e *Engine) evaluateCallerIDCondition(data json.RawMessage, callerID string
 
 // TimeCondition defines time-based routing rules
 type TimeCondition struct {
-	StartHour   int   `json:"start_hour"`   // 0-23
-	EndHour     int   `json:"end_hour"`     // 0-23
-	Days        []int `json:"days"`         // 0=Sunday, 6=Saturday
-	BusinessHours bool `json:"business_hours"` // Use system business hours
-	AfterHours   bool `json:"after_hours"`    // Inverse of business hours
+	StartHour     int   `json:"start_hour"`     // 0-23
+	EndHour       int   `json:"end_hour"`       // 0-23
+	Days          []int `json:"days"`           // 0=Sunday, 6=Saturday
+	BusinessHours bool  `json:"business_hours"` // Use system business hours
+	AfterHours    bool  `json:"after_hours"`    // Inverse of business hours
 }
 
 func (e *Engine) evaluateTimeCondition(data json.RawMessage, callTime time.Time) bool {

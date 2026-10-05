@@ -1,4 +1,4 @@
-module github.com/btafoya/gosip
+module github.com/rohitkumar-co-in/gosip
 
 go 1.25.0
 

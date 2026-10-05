@@ -16,7 +16,7 @@ type SIPTrunk struct {
 	DomainName   string
 	Secure       bool
 	// TLS-specific fields
-	TransferMode string // "disable-all", "enable-all", "sip-only"
+	TransferMode      string // "disable-all", "enable-all", "sip-only"
 	CnamLookupEnabled bool
 }
 

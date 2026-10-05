@@ -12,9 +12,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/btafoya/gosip/internal/config"
 	"github.com/caddyserver/certmagic"
 	"github.com/libdns/cloudflare"
+	"github.com/rohitkumar-co-in/gosip/internal/config"
 )
 
 // CertManager handles TLS certificate lifecycle management

@@ -7,15 +7,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/btafoya/gosip/internal/models"
+	"github.com/rohitkumar-co-in/gosip/internal/models"
 )
 
 func TestGetUserFromContext(t *testing.T) {
 	tests := []struct {
-		name     string
-		user     *models.User
-		wantNil  bool
-		wantID   int64
+		name    string
+		user    *models.User
+		wantNil bool
+		wantID  int64
 	}{
 		{
 			name:    "no user in context",
@@ -25,9 +25,9 @@ func TestGetUserFromContext(t *testing.T) {
 		{
 			name: "user in context",
 			user: &models.User{
-				ID:   123,
+				ID:    123,
 				Email: "testuser@example.com",
-				Role: "user",
+				Role:  "user",
 			},
 			wantNil: false,
 			wantID:  123,

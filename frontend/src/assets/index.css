@@ -1,59 +1,110 @@
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/fonts/leadomi-1.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/fonts/leadomi-2.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/fonts/leadomi-3.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/fonts/leadomi-4.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/fonts/leadomi-5.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/fonts/leadomi-6.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Syne';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/fonts/leadomi-7.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Syne';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/fonts/leadomi-8.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Syne';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url(/fonts/leadomi-9.ttf) format('truetype');
+}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
 @layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 200 85% 35%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 200 85% 35%;
-    --radius: 0.5rem;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 200 85% 45%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 200 85% 45%;
-  }
+ :root {
+ color-scheme:dark;
+ --background:60 4% 5%;--foreground:42 25% 92%;--card:60 2% 8%;--card-foreground:42 25% 92%;
+ --popover:60 2% 8%;--popover-foreground:42 25% 92%;--primary:24 97% 46%;--primary-foreground:0 0% 100%;
+ --secondary:60 4% 11%;--secondary-foreground:42 25% 92%;--muted:60 4% 11%;--muted-foreground:43 7% 60%;
+ --accent:60 4% 11%;--accent-foreground:42 25% 92%;--destructive:5 75% 55%;--destructive-foreground:0 0% 100%;
+ --border:60 4% 16%;--input:60 4% 16%;--ring:24 97% 46%;--radius:.75rem;
+ }
+ * {@apply border-border;}
+ body {@apply bg-background text-foreground;font-family:'DM Sans',sans-serif;}
+ h1,h2,h3,h4 {font-family:'Syne',sans-serif;letter-spacing:-.025em;}
+ h1 {font-weight:800!important;}
+ code,pre {font-family:'JetBrains Mono',monospace;}
+ input,select,textarea {background:#1c1c1a;color:#f0ede6;accent-color:#e85d04;}
+ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible,a:focus-visible {outline:2px solid #e85d04;outline-offset:3px;}
+ input[type=checkbox] {width:1rem;height:1rem;flex-shrink:0;}
+ button {transition:background-color .15s,border-color .15s;}
+ button:disabled {opacity:.45;cursor:not-allowed;}
+ table {font-variant-numeric:tabular-nums;}
+ th {font-size:.7rem;letter-spacing:.09em;text-transform:uppercase;color:#a09c92;}
 }
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
+@layer utilities {
+ .text-white {color:#fff;}
+ .bg-white {background:rgba(20,20,19,.82);backdrop-filter:blur(12px);}
+ .text-gray-900,.text-gray-800,.text-gray-700 {color:#f0ede6;}
+ .text-gray-600,.text-gray-500,.text-gray-400 {color:#a09c92;}
+ .bg-gray-50,.bg-gray-100 {background-color:#141413;}
+ .bg-gray-200,.bg-gray-300 {background-color:#1c1c1a;}
+ .border-gray-200,.border-gray-300 {border-color:#2a2a27;}
+ .bg-green-50,.bg-green-100 {background-color:#153125;}
+ .text-green-800,.text-green-700,.text-green-600 {color:#8bddb0;}
+ .bg-red-50,.bg-red-100 {background-color:#351c18;}
+ .text-red-800,.text-red-700,.text-red-600 {color:#ff9b8f;}
+ .bg-yellow-50,.bg-yellow-100,.bg-amber-50 {background-color:#342810;}
+ .text-amber-700,.text-yellow-800,.text-yellow-700 {color:#faa307;}
+ .rounded-lg.shadow,.rounded-lg.shadow-sm,.shadow.rounded-lg {border:1px solid #2a2a27;box-shadow:0 8px 32px #0002;}
+ .bg-primary:hover {background-color:#c34e03;}
+ .glass {background:rgba(20,20,19,.7);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.07);}
+ .gradient-text {background:linear-gradient(135deg,#e85d04,#faa307);background-clip:text;color:transparent;}
+ .page-enter {animation:page-enter 220ms ease-out both;}
 }
+@keyframes page-enter {from {opacity:0;transform:translateY(6px)}to {opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.page-enter{animation:none}*{scroll-behavior:auto!important}}

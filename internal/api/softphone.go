@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/btafoya/gosip/internal/models"
+	"github.com/rohitkumar-co-in/gosip/internal/models"
 )
 
 var e164Destination = regexp.MustCompile(`^\+[1-9][0-9]{7,14}$`)
@@ -49,7 +49,7 @@ func sipEndpoint(value, domain string) (string, bool) {
 }
 
 // VoiceOutgoing bridges an authenticated Twilio SIP endpoint to the PSTN.
-// Twilio authenticates SIP credentials; GoSIP validates the signed webhook and
+// Twilio authenticates SIP credentials; Leadomi SIP validates the signed webhook and
 // permits only a known device, configured caller ID, and E.164 destination.
 func (h *WebhookHandler) VoiceOutgoing(w http.ResponseWriter, r *http.Request) {
 	if r.ParseForm() != nil || !h.validateSignature(r) {

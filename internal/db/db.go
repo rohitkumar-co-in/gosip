@@ -187,17 +187,11 @@ func (db *DB) Migrate() error {
 			return fmt.Errorf("failed to begin transaction: %w", err)
 		}
 
-		// Split by semicolons and execute each statement
-		statements := strings.Split(string(content), ";")
-		for _, stmt := range statements {
-			stmt = strings.TrimSpace(stmt)
-			if stmt == "" {
-				continue
-			}
-			if _, err := tx.Exec(stmt); err != nil {
-				tx.Rollback()
-				return fmt.Errorf("failed to execute migration %s: %w", filename, err)
-			}
+		// Let SQLite parse the complete migration. Semicolon splitting breaks
+		// trigger bodies and quoted strings; mattn/go-sqlite3 executes the tail.
+		if _, err := tx.Exec(string(content)); err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to execute migration %s: %w", filename, err)
 		}
 
 		// Record migration

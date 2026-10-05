@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/btafoya/gosip/internal/config"
-	"github.com/btafoya/gosip/internal/db"
-	"github.com/btafoya/gosip/internal/models"
 	"github.com/go-chi/chi/v5"
+	"github.com/rohitkumar-co-in/gosip/internal/config"
+	"github.com/rohitkumar-co-in/gosip/internal/db"
+	"github.com/rohitkumar-co-in/gosip/internal/models"
 )
 
 // VoicemailHandler handles voicemail-related API endpoints
@@ -22,14 +22,14 @@ func NewVoicemailHandler(deps *Dependencies) *VoicemailHandler {
 
 // VoicemailResponse represents a voicemail in API responses
 type VoicemailResponse struct {
-	ID              int64   `json:"id"`
-	DIDID           int64   `json:"did_id"`
-	CallerID        string  `json:"caller_id"`
-	Duration        int     `json:"duration"`
-	RecordingURL    string  `json:"recording_url,omitempty"`
-	TranscriptText  string  `json:"transcript_text,omitempty"`
-	IsRead          bool    `json:"is_read"`
-	CreatedAt       string  `json:"created_at"`
+	ID                 int64  `json:"id"`
+	DIDID              int64  `json:"did_id"`
+	CallerID           string `json:"caller_id"`
+	Duration           int    `json:"duration"`
+	RecordingURL       string `json:"recording_url,omitempty"`
+	TranscriptText     string `json:"transcript_text,omitempty"`
+	IsRead             bool   `json:"is_read"`
+	CreatedAt          string `json:"created_at"`
 	TwilioRecordingSID string `json:"twilio_recording_sid,omitempty"`
 }
 

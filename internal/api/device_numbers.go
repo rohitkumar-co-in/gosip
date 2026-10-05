@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/btafoya/gosip/internal/db"
+	"github.com/rohitkumar-co-in/gosip/internal/db"
 )
 
 // Number assignments are server-side settings, never supplied by the phone.

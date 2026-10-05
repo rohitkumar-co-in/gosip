@@ -1,4 +1,4 @@
-// Package api provides the REST API for GoSIP
+// Package api provides the REST API for Leadomi SIP
 package api
 
 import (
@@ -196,6 +196,7 @@ func NewRouter(deps *Dependencies) chi.Router {
 				r.Get("/", voicemailHandler.List)
 				r.Get("/unread", voicemailHandler.ListUnread)
 				r.Get("/{id}", voicemailHandler.Get)
+				r.Get("/{id}/audio", voicemailHandler.Audio)
 				r.Put("/{id}/read", voicemailHandler.MarkAsRead)
 				r.Delete("/{id}", voicemailHandler.Delete)
 			})
@@ -239,7 +240,9 @@ func NewRouter(deps *Dependencies) chi.Router {
 					r.Put("/accounts/{id}", businessHandler.Provision)
 					r.Post("/accounts/{id}/disable", businessHandler.Disable)
 					r.Get("/numbers", businessHandler.Numbers)
+					r.Get("/number-review", businessHandler.ReviewNumber)
 					r.Get("/audit", businessHandler.Audit)
+					r.Get("/activity", businessHandler.Activity)
 					r.Get("/status", businessHandler.Status)
 					r.Get("/policy", businessHandler.Policy)
 					r.Put("/policy", businessHandler.Policy)

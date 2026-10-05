@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { MessageSquare, Send, RefreshCw, ArrowLeft } from 'lucide-vue-next'
 import api from '@/api/client'
+import {dateTime} from '@/utils/display'
 
 interface Message {
   id: number
@@ -16,8 +17,8 @@ interface Message {
 
 interface Conversation {
   phone_number: string
-  last_message: string
-  last_message_time: string
+  message_count: number
+  last_message_at: string
   unread_count: number
 }
 
@@ -30,10 +31,12 @@ const error = ref<string | null>(null)
 const newMessage = ref('')
 
 const dids = ref<{ id: number; phone_number: string; friendly_name: string }[]>([])
-const selectedDID = ref<string>('')
+const selectedDID = ref<number>(0)
+const recipient=ref('')
+watch(selectedDID,()=>{selectedConversation.value=null;messages.value=[];loadConversations()})
 
 onMounted(async () => {
-  await Promise.all([loadConversations(), loadDIDs()])
+  await loadDIDs();await loadConversations()
 })
 
 async function loadDIDs() {
@@ -41,7 +44,7 @@ async function loadDIDs() {
     const response = await api.get('/dids')
     dids.value = response.data.data || []
     if (dids.value.length > 0) {
-      selectedDID.value = dids.value[0].phone_number
+      selectedDID.value = dids.value[0].id
     }
   } catch {
     console.error('Failed to load DIDs')
@@ -52,7 +55,7 @@ async function loadConversations() {
   loading.value = true
   error.value = null
   try {
-    const response = await api.get('/messages/conversations')
+    const response = await api.get('/messages/conversations',{params:{did_id:selectedDID.value}})
     conversations.value = response.data.data || []
   } catch {
     error.value = 'Failed to load conversations'
@@ -65,7 +68,7 @@ async function loadMessages(phoneNumber: string) {
   loading.value = true
   selectedConversation.value = phoneNumber
   try {
-    const response = await api.get(`/messages/conversation/${encodeURIComponent(phoneNumber)}`)
+    const response = await api.get(`/messages/conversation/${encodeURIComponent(phoneNumber)}`,{params:{did_id:selectedDID.value}})
     messages.value = response.data.data || []
   } catch {
     error.value = 'Failed to load messages'
@@ -80,12 +83,12 @@ async function sendMessage() {
   sendingMessage.value = true
   try {
     await api.post('/messages', {
-      to: selectedConversation.value,
-      from: selectedDID.value,
+      to_number: selectedConversation.value,
+      did_id: selectedDID.value,
       body: newMessage.value
     })
     newMessage.value = ''
-    await loadMessages(selectedConversation.value)
+    await loadMessages(selectedConversation.value);await loadConversations()
   } catch (err: unknown) {
     const apiError = err as { response?: { data?: { error?: { message?: string } } } }
     error.value = apiError.response?.data?.error?.message || 'Failed to send message'
@@ -94,20 +97,7 @@ async function sendMessage() {
   }
 }
 
-function formatTime(dateStr: string): string {
-  const date = new Date(dateStr)
-  const now = new Date()
-  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
-
-  if (diffDays === 0) {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  } else if (diffDays === 1) {
-    return 'Yesterday'
-  } else if (diffDays < 7) {
-    return date.toLocaleDateString([], { weekday: 'short' })
-  }
-  return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
-}
+function formatTime(value:string){return dateTime(value)}
 
 function formatPhoneNumber(phone: string): string {
   if (phone.startsWith('+1') && phone.length === 12) {
@@ -139,6 +129,7 @@ const sortedMessages = computed(() => {
       {{ error }}
     </div>
 
+    <div class="flex flex-wrap gap-3 mb-4"><label class="text-sm">Business number<select v-model="selectedDID" class="ml-2 border rounded p-2"><option v-for="did in dids" :key="did.id" :value="did.id">{{did.phone_number}}</option></select></label><form @submit.prevent="/^\+[1-9][0-9]{7,14}$/.test(recipient)&&loadMessages(recipient)" class="flex gap-2"><input v-model="recipient" aria-label="New conversation number" placeholder="+country-code-number" pattern="\+[1-9][0-9]{7,14}" required class="border rounded p-2 text-sm" /><button :disabled="!selectedDID" class="border rounded px-3 text-sm">New conversation</button></form></div>
     <div class="flex h-full bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
       <!-- Conversations List -->
       <div
@@ -170,12 +161,12 @@ const sortedMessages = computed(() => {
                 {{ formatPhoneNumber(conv.phone_number) }}
               </span>
               <span class="text-xs text-gray-500">
-                {{ formatTime(conv.last_message_time) }}
+                {{ formatTime(conv.last_message_at) }}
               </span>
             </div>
             <div class="flex items-center justify-between mt-1">
               <p class="text-sm text-gray-500 truncate max-w-[200px]">
-                {{ conv.last_message }}
+                {{ conv.message_count }} messages
               </p>
               <span
                 v-if="conv.unread_count > 0"
@@ -253,7 +244,7 @@ const sortedMessages = computed(() => {
                     message.direction === 'outbound' ? 'text-white/70' : 'text-gray-500'
                   ]"
                 >
-                  {{ formatTime(message.created_at) }}
+                  {{ formatTime(message.created_at) }} · {{message.status}}
                 </p>
               </div>
             </div>
@@ -266,7 +257,7 @@ const sortedMessages = computed(() => {
                 v-model="selectedDID"
                 class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white text-sm"
               >
-                <option v-for="did in dids" :key="did.id" :value="did.phone_number">
+                <option v-for="did in dids" :key="did.id" :value="did.id">
                   {{ did.friendly_name || formatPhoneNumber(did.phone_number) }}
                 </option>
               </select>

@@ -10,39 +10,39 @@ import (
 
 // MWIState represents the message waiting indicator state for a mailbox
 type MWIState struct {
-	AOR              string    // Address of Record (sip:user@domain)
-	NewMessages      int       // Count of new (unread) voicemails
-	OldMessages      int       // Count of read voicemails
-	NewUrgent        int       // Count of new urgent messages
-	OldUrgent        int       // Count of old urgent messages
-	LastUpdated      time.Time // When the state was last updated
+	AOR         string    // Address of Record (sip:user@domain)
+	NewMessages int       // Count of new (unread) voicemails
+	OldMessages int       // Count of read voicemails
+	NewUrgent   int       // Count of new urgent messages
+	OldUrgent   int       // Count of old urgent messages
+	LastUpdated time.Time // When the state was last updated
 }
 
 // MWISubscription represents an MWI subscription from a device
 type MWISubscription struct {
-	ID           string
-	AOR          string    // Address of Record being monitored
-	ContactURI   string    // Where to send NOTIFY
-	FromURI      string    // From header for NOTIFY
-	ToURI        string    // To header for NOTIFY
-	CallID       string    // Call-ID for this dialog
-	FromTag      string    // From tag
-	ToTag        string    // To tag
-	CSeq         uint32    // Current CSeq
-	Expires      int       // Subscription duration in seconds
-	CreatedAt    time.Time
-	ExpiresAt    time.Time
+	ID         string
+	AOR        string // Address of Record being monitored
+	ContactURI string // Where to send NOTIFY
+	FromURI    string // From header for NOTIFY
+	ToURI      string // To header for NOTIFY
+	CallID     string // Call-ID for this dialog
+	FromTag    string // From tag
+	ToTag      string // To tag
+	CSeq       uint32 // Current CSeq
+	Expires    int    // Subscription duration in seconds
+	CreatedAt  time.Time
+	ExpiresAt  time.Time
 }
 
 // MWIManager handles Message Waiting Indicator state and notifications
 type MWIManager struct {
-	logger        *slog.Logger
-	server        *Server // Reference to SIP server for sending NOTIFY
+	logger *slog.Logger
+	server *Server // Reference to SIP server for sending NOTIFY
 
 	mu            sync.RWMutex
-	states        map[string]*MWIState         // AOR -> state
-	subscriptions map[string]*MWISubscription  // subscription ID -> subscription
-	aorSubs       map[string][]string          // AOR -> subscription IDs
+	states        map[string]*MWIState        // AOR -> state
+	subscriptions map[string]*MWISubscription // subscription ID -> subscription
+	aorSubs       map[string][]string         // AOR -> subscription IDs
 
 	// Event callbacks
 	onStateChange func(aor string, state *MWIState)

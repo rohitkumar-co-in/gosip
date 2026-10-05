@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/btafoya/gosip/internal/config"
-	"github.com/btafoya/gosip/internal/models"
+	"github.com/rohitkumar-co-in/gosip/internal/config"
+	"github.com/rohitkumar-co-in/gosip/internal/models"
 )
 
 func TestPBXMessageAuthorization(t *testing.T) {

@@ -3,7 +3,7 @@ package twilio
 import (
 	"testing"
 
-	"github.com/btafoya/gosip/internal/config"
+	"github.com/rohitkumar-co-in/gosip/internal/config"
 )
 
 func TestIsSecureSIPURI(t *testing.T) {

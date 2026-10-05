@@ -17,6 +17,7 @@ module.exports = {
       },
     },
     extend: {
+      fontFamily:{sans:["DM Sans","sans-serif"],heading:["Syne","sans-serif"],mono:["JetBrains Mono","monospace"]},
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

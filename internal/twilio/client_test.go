@@ -6,14 +6,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/btafoya/gosip/internal/config"
+	"github.com/rohitkumar-co-in/gosip/internal/config"
 )
 
 func TestNewClient(t *testing.T) {
 	tests := []struct {
-		name           string
-		cfg            *config.Config
-		expectHealthy  bool
+		name            string
+		cfg             *config.Config
+		expectHealthy   bool
 		expectClientNil bool
 	}{
 		{
@@ -22,7 +22,7 @@ func TestNewClient(t *testing.T) {
 				TwilioAccountSID: "AC123",
 				TwilioAuthToken:  "token123",
 			},
-			expectHealthy:  true,
+			expectHealthy:   true,
 			expectClientNil: false,
 		},
 		{
@@ -31,7 +31,7 @@ func TestNewClient(t *testing.T) {
 				TwilioAccountSID: "",
 				TwilioAuthToken:  "",
 			},
-			expectHealthy:  false,
+			expectHealthy:   false,
 			expectClientNil: true,
 		},
 		{
@@ -40,7 +40,7 @@ func TestNewClient(t *testing.T) {
 				TwilioAccountSID: "AC123",
 				TwilioAuthToken:  "",
 			},
-			expectHealthy:  false,
+			expectHealthy:   false,
 			expectClientNil: true,
 		},
 	}

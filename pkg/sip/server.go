@@ -8,10 +8,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/btafoya/gosip/internal/config"
-	"github.com/btafoya/gosip/internal/db"
 	"github.com/emiago/sipgo"
 	"github.com/emiago/sipgo/sip"
+	"github.com/rohitkumar-co-in/gosip/internal/config"
+	"github.com/rohitkumar-co-in/gosip/internal/db"
 )
 
 // Config holds SIP server configuration
@@ -26,7 +26,7 @@ type Config struct {
 	ZRTP       *config.ZRTPConfig
 }
 
-// Server wraps sipgo server with GoSIP-specific functionality
+// Server wraps sipgo server with Leadomi SIP-specific functionality
 type Server struct {
 	cfg       Config
 	ua        *sipgo.UserAgent

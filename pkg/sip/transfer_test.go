@@ -295,28 +295,28 @@ func TestAttendedTransfer_StateValidation(t *testing.T) {
 
 	// Only test invalid states since valid states require a working server
 	tests := []struct {
-		name           string
-		originalState  CallState
-		consultState   CallState
-		errorContain   string
+		name          string
+		originalState CallState
+		consultState  CallState
+		errorContain  string
 	}{
 		{
-			name:           "original not held",
-			originalState:  CallStateActive,
-			consultState:   CallStateActive,
-			errorContain:   "original call must be on hold",
+			name:          "original not held",
+			originalState: CallStateActive,
+			consultState:  CallStateActive,
+			errorContain:  "original call must be on hold",
 		},
 		{
-			name:           "consult not active",
-			originalState:  CallStateHolding,
-			consultState:   CallStateHeld,
-			errorContain:   "consult call must be active",
+			name:          "consult not active",
+			originalState: CallStateHolding,
+			consultState:  CallStateHeld,
+			errorContain:  "consult call must be active",
 		},
 		{
-			name:           "original ringing",
-			originalState:  CallStateRinging,
-			consultState:   CallStateActive,
-			errorContain:   "original call must be on hold",
+			name:          "original ringing",
+			originalState: CallStateRinging,
+			consultState:  CallStateActive,
+			errorContain:  "original call must be on hold",
 		},
 	}
 

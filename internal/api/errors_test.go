@@ -9,14 +9,14 @@ import (
 
 func TestWriteError(t *testing.T) {
 	tests := []struct {
-		name         string
-		statusCode   int
-		code         string
-		message      string
-		details      []FieldError
-		wantStatus   int
-		wantCode     string
-		wantMessage  string
+		name        string
+		statusCode  int
+		code        string
+		message     string
+		details     []FieldError
+		wantStatus  int
+		wantCode    string
+		wantMessage string
 	}{
 		{
 			name:        "basic error",

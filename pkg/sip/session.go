@@ -1,4 +1,4 @@
-// Package sip provides call session management for GoSIP
+// Package sip provides call session management for Leadomi SIP
 package sip
 
 import (
@@ -16,12 +16,12 @@ import (
 type CallState string
 
 const (
-	CallStateRinging     CallState = "ringing"
-	CallStateActive      CallState = "active"
-	CallStateHeld        CallState = "held"
-	CallStateHolding     CallState = "holding"      // We put the other party on hold
+	CallStateRinging      CallState = "ringing"
+	CallStateActive       CallState = "active"
+	CallStateHeld         CallState = "held"
+	CallStateHolding      CallState = "holding" // We put the other party on hold
 	CallStateTransferring CallState = "transferring"
-	CallStateTerminated  CallState = "terminated"
+	CallStateTerminated   CallState = "terminated"
 )
 
 // CallDirection indicates inbound or outbound call
@@ -44,20 +44,20 @@ type CallSession struct {
 	RemoteURI string `json:"remote_uri"`
 
 	// Call metadata
-	Direction    CallDirection `json:"direction"`
-	DeviceID     int64         `json:"device_id,omitempty"`
-	DIDID        *int64        `json:"did_id,omitempty"`
-	FromNumber   string        `json:"from_number"`
-	ToNumber     string        `json:"to_number"`
+	Direction  CallDirection `json:"direction"`
+	DeviceID   int64         `json:"device_id,omitempty"`
+	DIDID      *int64        `json:"did_id,omitempty"`
+	FromNumber string        `json:"from_number"`
+	ToNumber   string        `json:"to_number"`
 
 	// State management
 	State         CallState `json:"state"`
 	PreviousState CallState `json:"previous_state,omitempty"`
 
 	// Timing
-	CreatedAt   time.Time  `json:"created_at"`
-	AnsweredAt  *time.Time `json:"answered_at,omitempty"`
-	HeldAt      *time.Time `json:"held_at,omitempty"`
+	CreatedAt    time.Time  `json:"created_at"`
+	AnsweredAt   *time.Time `json:"answered_at,omitempty"`
+	HeldAt       *time.Time `json:"held_at,omitempty"`
 	TerminatedAt *time.Time `json:"terminated_at,omitempty"`
 
 	// SDP information for hold/resume
@@ -66,9 +66,9 @@ type CallSession struct {
 	HeldSDP   []byte `json:"-"` // SDP when hold was initiated
 
 	// Transfer information
-	TransferTarget   string `json:"transfer_target,omitempty"`
-	TransferredFrom  string `json:"transferred_from,omitempty"`
-	ConsultCallID    string `json:"consult_call_id,omitempty"` // For attended transfer
+	TransferTarget  string `json:"transfer_target,omitempty"`
+	TransferredFrom string `json:"transferred_from,omitempty"`
+	ConsultCallID   string `json:"consult_call_id,omitempty"` // For attended transfer
 
 	// SIP transaction references (not serialized)
 	serverTx sip.ServerTransaction `json:"-"`
@@ -78,15 +78,15 @@ type CallSession struct {
 
 // Dialog holds SIP dialog state for mid-call requests
 type Dialog struct {
-	CallID     string
-	LocalTag   string
-	RemoteTag  string
-	LocalSeq   uint32
-	RemoteSeq  uint32
-	LocalURI   string
-	RemoteURI  string
-	RouteSet   []string
-	LocalContact string
+	CallID        string
+	LocalTag      string
+	RemoteTag     string
+	LocalSeq      uint32
+	RemoteSeq     uint32
+	LocalURI      string
+	RemoteURI     string
+	RouteSet      []string
+	LocalContact  string
 	RemoteContact string
 }
 
@@ -95,15 +95,15 @@ func NewCallSession(req *sip.Request, direction CallDirection) *CallSession {
 	now := time.Now()
 
 	session := &CallSession{
-		CallID:      req.CallID().Value(),
-		FromTag:     getTag(req.From()),
-		LocalURI:    req.To().Address.String(),
-		RemoteURI:   req.From().Address.String(),
-		Direction:   direction,
-		State:       CallStateRinging,
-		CreatedAt:   now,
-		FromNumber:  extractNumber(req.From().Address.String()),
-		ToNumber:    extractNumber(req.To().Address.String()),
+		CallID:     req.CallID().Value(),
+		FromTag:    getTag(req.From()),
+		LocalURI:   req.To().Address.String(),
+		RemoteURI:  req.From().Address.String(),
+		Direction:  direction,
+		State:      CallStateRinging,
+		CreatedAt:  now,
+		FromNumber: extractNumber(req.From().Address.String()),
+		ToNumber:   extractNumber(req.To().Address.String()),
 	}
 
 	// Extract SDP if present
@@ -232,7 +232,7 @@ func (s *CallSession) ToJSON() ([]byte, error) {
 // SessionManager manages all active call sessions
 type SessionManager struct {
 	mu       sync.RWMutex
-	sessions map[string]*CallSession // keyed by CallID
+	sessions map[string]*CallSession  // keyed by CallID
 	byDevice map[int64][]*CallSession // sessions by device ID
 }
 

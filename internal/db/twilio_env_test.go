@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/btafoya/gosip/internal/config"
+	"github.com/rohitkumar-co-in/gosip/internal/config"
 )
 
 func TestMigrateTwilioCredentialsPreservesValues(t *testing.T) {

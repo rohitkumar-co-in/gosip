@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"crypto/subtle"
 	"encoding/json"
 	"io"
@@ -54,5 +55,6 @@ func (h *PBXHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 	}
 	body, _ := json.Marshal(SendMessageRequest{DIDID: did.ID, ToNumber: input.ToNumber, Body: input.Body})
 	r.Body = io.NopCloser(bytes.NewReader(body))
+	r = r.WithContext(context.WithValue(r.Context(), messageActorKey{}, input.Username))
 	NewMessageHandler(h.deps).Send(w, r)
 }

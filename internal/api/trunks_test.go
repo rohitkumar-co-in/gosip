@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/btafoya/gosip/internal/db"
-	"github.com/btafoya/gosip/internal/models"
-	"github.com/btafoya/gosip/internal/twilio"
+	"github.com/rohitkumar-co-in/gosip/internal/db"
+	"github.com/rohitkumar-co-in/gosip/internal/models"
+	"github.com/rohitkumar-co-in/gosip/internal/twilio"
 )
 
 func TestTrunkHandler_List(t *testing.T) {

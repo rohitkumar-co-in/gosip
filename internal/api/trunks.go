@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/btafoya/gosip/internal/db"
-	"github.com/btafoya/gosip/internal/models"
 	"github.com/go-chi/chi/v5"
+	"github.com/rohitkumar-co-in/gosip/internal/db"
+	"github.com/rohitkumar-co-in/gosip/internal/models"
 )
 
 // validTransferModes defines allowed SIP trunk transfer modes
@@ -30,15 +30,15 @@ func NewTrunkHandler(deps *Dependencies) *TrunkHandler {
 
 // TrunkResponse represents a trunk in API responses
 type TrunkResponse struct {
-	ID                int64     `json:"id"`
-	TwilioSID         string    `json:"twilio_sid"`
-	FriendlyName      string    `json:"friendly_name,omitempty"`
-	DomainName        string    `json:"domain_name,omitempty"`
-	Secure            bool      `json:"secure"`
-	TransferMode      string    `json:"transfer_mode"`
-	CnamLookupEnabled bool      `json:"cnam_lookup_enabled"`
-	CreatedAt         string    `json:"created_at,omitempty"`
-	UpdatedAt         string    `json:"updated_at,omitempty"`
+	ID                int64  `json:"id"`
+	TwilioSID         string `json:"twilio_sid"`
+	FriendlyName      string `json:"friendly_name,omitempty"`
+	DomainName        string `json:"domain_name,omitempty"`
+	Secure            bool   `json:"secure"`
+	TransferMode      string `json:"transfer_mode"`
+	CnamLookupEnabled bool   `json:"cnam_lookup_enabled"`
+	CreatedAt         string `json:"created_at,omitempty"`
+	UpdatedAt         string `json:"updated_at,omitempty"`
 }
 
 // CreateTrunkRequest represents a trunk creation request

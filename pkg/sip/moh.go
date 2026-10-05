@@ -1,4 +1,4 @@
-// Package sip provides Music on Hold functionality for GoSIP
+// Package sip provides Music on Hold functionality for Leadomi SIP
 package sip
 
 import (
@@ -17,10 +17,10 @@ const maxMOHSize int64 = 50 * 1024 * 1024
 
 // MOHManager manages Music on Hold streams
 type MOHManager struct {
-	mu           sync.RWMutex
+	mu            sync.RWMutex
 	activeStreams map[string]*MOHStream
-	audioPath    string
-	enabled      bool
+	audioPath     string
+	enabled       bool
 }
 
 // MOHStream represents an active MOH stream for a call
@@ -264,9 +264,9 @@ func (m *MOHManager) IsEnabled() bool {
 
 // MOHStatus represents the current MOH status for API responses
 type MOHStatus struct {
-	Enabled      bool   `json:"enabled"`
-	AudioPath    string `json:"audio_path"`
-	ActiveCount  int    `json:"active_count"`
+	Enabled     bool   `json:"enabled"`
+	AudioPath   string `json:"audio_path"`
+	ActiveCount int    `json:"active_count"`
 }
 
 // GetStatus returns the current MOH status

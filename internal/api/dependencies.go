@@ -3,11 +3,11 @@ package api
 import (
 	"context"
 
-	"github.com/btafoya/gosip/internal/config"
-	"github.com/btafoya/gosip/internal/db"
-	"github.com/btafoya/gosip/internal/models"
-	"github.com/btafoya/gosip/internal/twilio"
-	"github.com/btafoya/gosip/pkg/sip"
+	"github.com/rohitkumar-co-in/gosip/internal/config"
+	"github.com/rohitkumar-co-in/gosip/internal/db"
+	"github.com/rohitkumar-co-in/gosip/internal/models"
+	"github.com/rohitkumar-co-in/gosip/internal/twilio"
+	"github.com/rohitkumar-co-in/gosip/pkg/sip"
 )
 
 // Dependencies holds all dependencies for API handlers

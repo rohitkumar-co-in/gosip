@@ -12,8 +12,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/btafoya/gosip/internal/config"
-	"github.com/btafoya/gosip/internal/db"
+	"github.com/rohitkumar-co-in/gosip/internal/config"
+	"github.com/rohitkumar-co-in/gosip/internal/db"
 )
 
 func TestSetupStoresTwilioOutsideDatabase(t *testing.T) {

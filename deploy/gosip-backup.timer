@@ -1,5 +1,5 @@
 [Unit]
-Description=Daily GoSIP business backup
+Description=Daily Leadomi SIP business backup
 
 [Timer]
 OnCalendar=*-*-* 02:15:00 UTC

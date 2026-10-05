@@ -1,4 +1,4 @@
-// Package sip provides call transfer functionality for GoSIP
+// Package sip provides call transfer functionality for Leadomi SIP
 package sip
 
 import (
@@ -164,7 +164,7 @@ func (t *TransferManager) handleAttendedTransfer(session *CallSession, req *sip.
 	return nil
 }
 
-// BlindTransfer initiates a blind transfer from GoSIP
+// BlindTransfer initiates a blind transfer from Leadomi SIP
 func (t *TransferManager) BlindTransfer(ctx context.Context, session *CallSession, targetNumber string) error {
 	if session.GetState() != CallStateActive && session.GetState() != CallStateHolding {
 		return fmt.Errorf("can only transfer active or held calls, current state: %s", session.GetState())

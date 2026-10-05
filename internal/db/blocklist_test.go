@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/btafoya/gosip/internal/models"
+	"github.com/rohitkumar-co-in/gosip/internal/models"
 )
 
 func TestBlocklistRepository_Create(t *testing.T) {

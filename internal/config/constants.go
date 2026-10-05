@@ -1,4 +1,4 @@
-// Package config provides configuration constants and settings for GoSIP
+// Package config provides configuration constants and settings for Leadomi SIP
 package config
 
 import "time"
@@ -49,30 +49,30 @@ const (
 const (
 	DefaultSIPPort      = 5060
 	DefaultHTTPPort     = 8080
-	DefaultUserAgent    = "GoSIP/1.0"
+	DefaultUserAgent    = "Leadomi SIP/1.0"
 	RegistrationExpires = 3600 // seconds
 )
 
 // Database paths
 const (
-	DefaultDataDir    = "./data"
-	DefaultDBFile     = "gosip.db"
-	RecordingsDir     = "recordings"
-	VoicemailsDir     = "voicemails"
-	BackupsDir        = "backups"
-	CertsDir          = "certs"
-	MOHDir            = "moh"
-	MOHDefaultFile    = "default.wav"
+	DefaultDataDir = "./data"
+	DefaultDBFile  = "gosip.db"
+	RecordingsDir  = "recordings"
+	VoicemailsDir  = "voicemails"
+	BackupsDir     = "backups"
+	CertsDir       = "certs"
+	MOHDir         = "moh"
+	MOHDefaultFile = "default.wav"
 )
 
 // TLS defaults
 const (
-	DefaultTLSPort           = 5061  // SIPS default port
-	DefaultWSSPort           = 5081  // WebSocket Secure default port
-	DefaultTLSMinVersion     = "1.2"
-	DefaultACMECA            = "staging" // "staging" or "production"
-	DefaultCertMode          = "acme"    // "acme" or "manual"
-	DefaultDisableUnencrypted = false    // When true, disable SIP on port 5060 (UDP/TCP)
+	DefaultTLSPort            = 5061 // SIPS default port
+	DefaultWSSPort            = 5081 // WebSocket Secure default port
+	DefaultTLSMinVersion      = "1.2"
+	DefaultACMECA             = "staging" // "staging" or "production"
+	DefaultCertMode           = "acme"    // "acme" or "manual"
+	DefaultDisableUnencrypted = false     // When true, disable SIP on port 5060 (UDP/TCP)
 )
 
 // SRTP defaults

@@ -1,4 +1,4 @@
-// Package main is the entry point for the GoSIP application
+// Package main is the entry point for the Leadomi SIP application
 package main
 
 import (
@@ -11,11 +11,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/btafoya/gosip/internal/api"
-	"github.com/btafoya/gosip/internal/config"
-	"github.com/btafoya/gosip/internal/db"
-	"github.com/btafoya/gosip/internal/twilio"
-	"github.com/btafoya/gosip/pkg/sip"
+	"github.com/rohitkumar-co-in/gosip/internal/api"
+	"github.com/rohitkumar-co-in/gosip/internal/config"
+	"github.com/rohitkumar-co-in/gosip/internal/db"
+	"github.com/rohitkumar-co-in/gosip/internal/twilio"
+	"github.com/rohitkumar-co-in/gosip/pkg/sip"
 )
 
 func main() {
@@ -25,7 +25,7 @@ func main() {
 	}))
 	slog.SetDefault(logger)
 
-	slog.Info("Starting GoSIP", "version", "1.0.0")
+	slog.Info("Starting Leadomi SIP", "version", "1.0.0")
 
 	// Load configuration
 	cfg := config.Load()
@@ -131,5 +131,5 @@ func main() {
 	// Stop SIP server
 	sipServer.Stop()
 
-	slog.Info("GoSIP shutdown complete")
+	slog.Info("Leadomi SIP shutdown complete")
 }

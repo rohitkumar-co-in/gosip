@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/btafoya/gosip/internal/config"
+	"github.com/rohitkumar-co-in/gosip/internal/config"
 )
 
 func TestNewCertManager_Disabled(t *testing.T) {

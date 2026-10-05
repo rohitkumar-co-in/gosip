@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"unicode"
 
-	"github.com/btafoya/gosip/internal/db"
-	"github.com/btafoya/gosip/internal/models"
 	"github.com/go-chi/chi/v5"
+	"github.com/rohitkumar-co-in/gosip/internal/db"
+	"github.com/rohitkumar-co-in/gosip/internal/models"
 )
 
 // isValidPhoneNumber checks that a phone number contains only +, digits, spaces, dashes, and parens.

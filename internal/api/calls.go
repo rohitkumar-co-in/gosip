@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/btafoya/gosip/internal/audio"
-	"github.com/btafoya/gosip/pkg/sip"
 	"github.com/go-chi/chi/v5"
+	"github.com/rohitkumar-co-in/gosip/internal/audio"
+	"github.com/rohitkumar-co-in/gosip/pkg/sip"
 )
 
 // CallHandler handles active call control API endpoints
@@ -423,12 +423,12 @@ func (h *CallHandler) UpdateMOH(w http.ResponseWriter, r *http.Request) {
 
 // MOHUploadResponse represents the response from uploading MOH audio
 type MOHUploadResponse struct {
-	Success   bool                       `json:"success"`
-	Message   string                     `json:"message"`
-	FilePath  string                     `json:"file_path,omitempty"`
-	Duration  float64                    `json:"duration,omitempty"`
-	Warnings  []string                   `json:"warnings,omitempty"`
-	Error     *audio.WAVValidationError  `json:"error,omitempty"`
+	Success  bool                      `json:"success"`
+	Message  string                    `json:"message"`
+	FilePath string                    `json:"file_path,omitempty"`
+	Duration float64                   `json:"duration,omitempty"`
+	Warnings []string                  `json:"warnings,omitempty"`
+	Error    *audio.WAVValidationError `json:"error,omitempty"`
 }
 
 // UploadMOHAudio handles uploading a WAV file for Music on Hold
