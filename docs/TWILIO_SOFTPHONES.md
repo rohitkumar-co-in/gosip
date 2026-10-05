@@ -27,10 +27,13 @@ Add a GoSIP device matching the SIP credential username and a default ring route
 for the DID. Ringing uses TLS and SRTP, then voicemail after a busy/unanswered call.
 
 On Android, add a third-party SIP account in Linphone. Use the exact credential
-username/password, an edge-specific Twilio registration domain, TLS on port 5061,
+username/password, the Twilio registration domain, TLS on port 5061,
 and SRTP media encryption. Do not use DTLS or ZRTP for this Twilio connection.
 Use G.711 PCMU/PCMA and RFC 2833/4733 DTMF. The base domain is used by GoSIP to
 dial the registered endpoint regardless of which edge the phone registers with.
+The base domain defaults registration to Ashburn. An optional edge proxy can be
+configured as described in Twilio's registration guide; retain certificate
+verification and verify the TLS hostname before using an edge-specific address.
 
 GoSIP shows these devices as "Managed by Twilio"; its local registration list
 does not report Twilio registrations. Additional devices require credentials in
