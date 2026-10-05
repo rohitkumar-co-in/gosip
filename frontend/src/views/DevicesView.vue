@@ -56,7 +56,7 @@ function openEditModal(device: Device) {
   modalError.value = null
   form.value = {
     name: device.name,
-    extension: device.extension,
+    extension: device.extension || device.username,
     password: '',
     caller_id: device.caller_id || '',
     device_type: device.device_type || 'softphone'

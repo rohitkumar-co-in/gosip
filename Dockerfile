@@ -4,10 +4,10 @@ FROM node:20-alpine AS frontend-builder
 WORKDIR /app/frontend
 
 # Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN npm install --global pnpm@10.11.0
 
 # Copy frontend package files
-COPY frontend/package.json frontend/pnpm-lock.yaml* ./
+COPY frontend/package.json frontend/pnpm-lock.yaml ./
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
@@ -19,7 +19,7 @@ COPY frontend/ ./
 RUN pnpm build
 
 # Build stage for backend
-FROM golang:1.21-alpine AS backend-builder
+FROM golang:1.23-alpine AS backend-builder
 
 # Install build dependencies
 RUN apk add --no-cache gcc musl-dev sqlite-dev
@@ -39,7 +39,7 @@ COPY . .
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 
 # Build binary with CGO enabled for SQLite
-RUN CGO_ENABLED=1 GOOS=linux go build -a -ldflags '-linkmode external -extldflags "-static"' -o gosip ./cmd/gosip
+RUN CGO_ENABLED=1 GOOS=linux GOMAXPROCS=1 go build -p 1 -ldflags '-linkmode external -extldflags "-static"' -o gosip ./cmd/gosip
 
 # Final stage
 FROM alpine:3.19
@@ -59,7 +59,7 @@ RUN mkdir -p /app/data/recordings /app/data/voicemails /app/data/backups && \
 
 # Copy binary from builder
 COPY --from=backend-builder /app/gosip .
-COPY --from=backend-builder /app/migrations ./migrations
+# Database migrations are embedded in the binary from internal/db/migrations.
 
 # Copy frontend assets
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist

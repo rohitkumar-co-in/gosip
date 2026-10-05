@@ -7,7 +7,6 @@ import api from '@/api/client'
 const authStore = useAuthStore()
 
 const activeTab = ref('profile')
-const loading = ref(false)
 const saving = ref(false)
 const error = ref<string | null>(null)
 const success = ref<string | null>(null)
@@ -59,7 +58,6 @@ const tabs = [
 onMounted(async () => {
   if (authStore.user) {
     profileForm.value.email = authStore.user.email
-    profileForm.value.name = authStore.user.name || ''
   }
 
   await loadNotificationSettings()

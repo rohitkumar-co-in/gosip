@@ -1,4 +1,4 @@
-import { get, post, put, del, type PaginatedResponse } from './client'
+import { get, post, put, del } from './client'
 
 // Types matching backend models
 export interface ProvisioningProfile {

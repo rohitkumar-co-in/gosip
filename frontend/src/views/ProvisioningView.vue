@@ -263,9 +263,7 @@ function getStatusBadge(status: string) {
   }
 }
 
-const unprovisionedDevices = computed(() =>
-  devices.value.filter(d => d.provisioning_status !== 'provisioned')
-)
+const provisioningOrigin = window.location.origin
 
 const activeTokenCount = computed(() =>
   tokens.value.filter(t => !t.revoked && new Date(t.expires_at) > new Date()).length
@@ -475,7 +473,7 @@ const activeTokenCount = computed(() =>
                       {{ token.token.substring(0, 16) }}...
                     </code>
                     <button
-                      @click="copyToClipboard(`${window.location.origin}/api/provision/${token.token}`)"
+                      @click="copyToClipboard(`${provisioningOrigin}/api/provision/${token.token}`)"
                       class="ml-2 text-gray-400 hover:text-gray-600"
                       title="Copy full URL"
                     >

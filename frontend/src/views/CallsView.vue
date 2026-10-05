@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, RefreshCw, Download, Filter } from 'lucide-vue-next'
+import { PhoneIncoming, PhoneOutgoing, PhoneMissed, RefreshCw, Download, Filter } from 'lucide-vue-next'
 import api from '@/api/client'
 
 interface CDR {

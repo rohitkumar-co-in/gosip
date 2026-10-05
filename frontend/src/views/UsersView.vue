@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Users, Plus, Edit2, Trash2, RefreshCw, Shield, User } from 'lucide-vue-next'
+import { Plus, Edit2, Trash2, RefreshCw, Shield, User } from 'lucide-vue-next'
 import api from '@/api/client'
 
 interface UserRecord {
