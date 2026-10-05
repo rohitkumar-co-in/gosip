@@ -23,6 +23,7 @@ root=Path('/home/ubuntu/gosip-pbx-integration')
 root.mkdir(exist_ok=True)
 username='testphone'
 password=secrets.token_hex(20)
+second_password=password
 secret=secrets.token_hex(32)
 container='gosip-pbx-integration'
 docker=lambda *args:subprocess.check_output(['sudo','-n','docker',*args],text=True).strip()
@@ -30,9 +31,12 @@ gateway=docker('network','inspect','bridge','--format','{{range .IPAM.Config}}{{
 source=root/'gosip.db'
 if source.exists():source.unlink()
 db=sqlite3.connect(source)
-db.executescript('CREATE TABLE devices(id INTEGER,username TEXT,password_hash TEXT); CREATE TABLE routes(did_id INTEGER,enabled INTEGER,action_type TEXT,action_data TEXT); CREATE TABLE messages(id INTEGER,did_id INTEGER,direction TEXT,from_number TEXT,body TEXT,media_urls TEXT,status TEXT);')
+db.executescript('CREATE TABLE config(key TEXT PRIMARY KEY,value TEXT); CREATE TABLE devices(id INTEGER,username TEXT,password_hash TEXT); CREATE TABLE routes(did_id INTEGER,enabled INTEGER,action_type TEXT,action_data TEXT); CREATE TABLE messages(id INTEGER,did_id INTEGER,direction TEXT,from_number TEXT,body TEXT,media_urls TEXT,status TEXT);')
 db.execute('INSERT INTO devices VALUES(1,?,?)',(username,hashlib.md5((username+':gosip:'+password).encode()).hexdigest()))
+db.execute('INSERT INTO devices VALUES(2,?,?)',('testphone2',hashlib.md5(('testphone2:gosip:'+password).encode()).hexdigest()))
+db.execute('INSERT INTO config VALUES(?,?)',('pbx_device_numbers',json.dumps({'testphone2':'+442345678901'})))
 db.execute('INSERT INTO routes VALUES(1,1,?,?)',('ring',json.dumps({'devices':[1]})))
+db.execute('INSERT INTO routes VALUES(2,1,?,?)',('ring',json.dumps({'devices':[2]})))
 db.commit()
 received=[]
 invitations=[]
@@ -48,6 +52,8 @@ backend=http.server.ThreadingHTTPServer((gateway,18088),Backend)
 threading.Thread(target=backend.serve_forever,daemon=True).start()
 env={'GOSIP_PBX_SECRET':secret,'GOSIP_PBX_TRUNK_USER':'twilio-in','GOSIP_PBX_TRUNK_PASSWORD':secrets.token_hex(20),'PBX_DOMAIN':'sip.leadomi.com','PBX_PUBLIC_IP':'18.134.241.218','PBX_TWILIO_USER':'dummy','PBX_TWILIO_PASSWORD':'dummy','TWILIO_SIP_DOMAIN':'dummy.sip.twilio.com','GOSIP_OUTBOUND_CALLER_ID':'+441234567890','GOSIP_URL':'http://'+gateway+':18088','PBX_TWILIO_NETWORKS':'192.0.2.0/24'}
 envpath=root/'test.env';envpath.write_text('\n'.join(k+'='+v for k,v in env.items())+'\n')
+env['PBX_TWILIO_DEVICE_PASSWORDS']=json.dumps({'testphone2':secrets.token_hex(20)})
+envpath.write_text('\n'.join(k+'='+v for k,v in env.items())+'\n')
 try:docker('rm','-f',container)
 except subprocess.CalledProcessError:pass
 docker('run','-d','--name',container,'--env-file',str(envpath),'-p','127.0.0.1:16061:5061','-v',str(root)+':/gosip:ro','-v','/data/gosip-pbx/certs:/certs:ro','-v','/home/ubuntu/bridge.py:/opt/gosip/bridge.py:ro','gosip-pbx:staging')
@@ -103,6 +109,12 @@ try:
     assert re.search(r'allow_wildcard_certs\s*:\s*Yes',transport,re.I), 'Twilio wildcard certificate support missing'
     assert re.search(r'verify_server\s*:\s*Yes',transport,re.I), 'Server certificate validation must stay enabled'
     print('PASS Twilio TLS contact parameters and verified wildcard certificate configuration')
+    for identifier, number, trunk in [(1, '+441234567890', 'twilio-out'), (2, '+442345678901', 'twilio-out-2')]:
+        rules=docker('exec',container,'asterisk','-rx',f'dialplan show +441111111111@from-phone-{identifier}')
+        assert f'CALLERID(num)={number}' in rules and f'@{trunk},60' in rules
+    second=docker('exec',container,'asterisk','-rx','pjsip show endpoint twilio-out-2')
+    assert re.search(r'from_user\s*:\s*testphone2',second), 'Second phone must retain its identity through Twilio'
+    print('PASS separate phone call contexts use assigned caller IDs and SIP identities')
     head=authenticated('REGISTER',username,username)
     assert head.startswith('SIP/2.0 200'),head.splitlines()[0]
     print('PASS authenticated TLS registration with existing HA1 format')
@@ -142,6 +154,19 @@ try:
     head=authenticated('REGISTER',username,username)
     assert head.startswith('SIP/2.0 200'),head.splitlines()[0]
     print('PASS device password update synchronizes and reloads without restart')
+    first_password=password
+    username='testphone2';password=second_password
+    head=authenticated('REGISTER',username,username)
+    assert head.startswith('SIP/2.0 200'),head.splitlines()[0]
+    db.execute("INSERT INTO messages VALUES(3,2,'inbound','+444444444444','Second phone only','null','received')");db.commit()
+    while True:
+        head,content=receive();response(head)
+        if head.startswith('MESSAGE') and content=='Second phone only':
+            assert 'sip:testphone2@' in head;break
+    queued=docker('exec',container,'python3','-c',"import sqlite3;print(sqlite3.connect('/var/lib/gosip-pbx/delivery.db').execute('SELECT username FROM deliveries WHERE message_id=3').fetchall())")
+    assert queued=="[('testphone2',)]",queued
+    print('PASS second DID incoming SMS reaches only its assigned phone')
+    username='testphone';password=first_password
     # Simulate a Twilio source address only after phone registration tests.
     docker('exec',container,'python3','-c',"from pathlib import Path;p=Path('/etc/asterisk/pjsip.conf');p.write_text(p.read_text().replace('endpoint=twilio-in\\n','endpoint=twilio-in\\nmatch="+gateway+"/32\\n'))")
     docker('exec',container,'asterisk','-rx','module reload res_pjsip.so')

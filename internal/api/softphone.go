@@ -72,7 +72,12 @@ func (h *WebhookHandler) VoiceOutgoing(w http.ResponseWriter, r *http.Request) {
 		h.respondTwiML(w, h.errorTwiML("Dial the full international number starting with plus"))
 		return
 	}
-	did, err := h.deps.DB.DIDs.GetByNumber(r.Context(), h.deps.Config.OutboundCallerID)
+	callerID, err := deviceOutboundNumber(r.Context(), h.deps, username)
+	if err != nil {
+		h.respondTwiML(w, h.errorTwiML("Outbound caller ID is not configured"))
+		return
+	}
+	did, err := h.deps.DB.DIDs.GetByNumber(r.Context(), callerID)
 	if err != nil || !did.VoiceEnabled || !e164Destination.MatchString(did.Number) {
 		h.respondTwiML(w, h.errorTwiML("Outbound caller ID is not configured"))
 		return

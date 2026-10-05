@@ -73,7 +73,7 @@ def reload_sip():
     cli("module reload res_pjsip_endpoint_identifier_ip.so")
 
 
-def render(devices):
+def render(devices, device_numbers=None):
     public_ip = str(ipaddress.ip_address(os.environ["PBX_PUBLIC_IP"]))
     safe(DOMAIN, re.compile(r"^[a-zA-Z0-9.-]+$"))
     trunk_domain = safe(os.environ["TWILIO_SIP_DOMAIN"], re.compile(r"^[a-zA-Z0-9.-]+$"))
@@ -81,6 +81,8 @@ def render(devices):
     trunk_password = safe(os.environ["PBX_TWILIO_PASSWORD"])
     incoming_user = safe(os.environ["GOSIP_PBX_TRUNK_USER"])
     incoming_password = safe(os.environ["GOSIP_PBX_TRUNK_PASSWORD"])
+    device_numbers = device_numbers or {}
+    device_passwords = json.loads(os.getenv("PBX_TWILIO_DEVICE_PASSWORDS") or "{}")
     pjsip = f"""[global]
 type=global
 user_agent=GoSIP-Asterisk
@@ -176,19 +178,41 @@ clearglobalvars=no
 [deny]
 exten => _.,1,Hangup(21)
 
-[from-phone]
-exten => _+ZXXXXXXX.,1,Set(CALLERID(num)={safe(os.environ['GOSIP_OUTBOUND_CALLER_ID'], NUMBER)})
- same => n,Dial(PJSIP/${{EXTEN}}@twilio-out,60)
- same => n,Hangup()
-; Invalid or non-international destinations never reach Twilio.
-exten => _.,1,Hangup(28)
-
 [from-twilio]
 """
     for device in devices:
         username = safe(device["username"])
         identifier = int(device["id"])
         digest = safe(device["password_hash"], re.compile(r"^[a-fA-F0-9]{32}$"))
+        outgoing = "twilio-out"
+        if username in device_numbers and username != trunk_user:
+            outgoing = f"twilio-out-{identifier}"
+            outgoing_password = safe(device_passwords[username])
+            pjsip += f"""
+[{outgoing}-auth]
+type=auth
+auth_type=userpass
+username={username}
+password={outgoing_password}
+
+[{outgoing}]
+type=endpoint
+transport=tls
+context=deny
+media_address={public_ip}
+aors=twilio-out
+disallow=all
+allow=ulaw,alaw
+outbound_auth={outgoing}-auth
+from_user={username}
+from_domain={trunk_domain}
+direct_media=no
+rtp_symmetric=yes
+force_rport=yes
+media_encryption=sdes
+media_encryption_optimistic=no
+dtmf_mode=rfc4733
+"""
         pjsip += f"""
 [{username}-auth]
 type=auth
@@ -210,7 +234,7 @@ qualify_timeout=5
 [{username}]
 type=endpoint
 transport=tls
-context=from-phone
+context=from-phone-{identifier}
 media_address={public_ip}
 message_context=sms-{identifier}
 auth={username}-auth
@@ -233,7 +257,16 @@ rtp_keepalive=20
     dialplan += "exten => _.,1,Hangup(21)\n"
     for device in devices:
         username = safe(device["username"])
+        identifier = int(device['id'])
+        caller_id = safe(device_numbers.get(username, os.environ['GOSIP_OUTBOUND_CALLER_ID']), NUMBER)
+        outgoing = f"twilio-out-{identifier}" if username in device_numbers and username != trunk_user else "twilio-out"
         dialplan += f"""
+[from-phone-{identifier}]
+exten => _+ZXXXXXXX.,1,Set(CALLERID(num)={caller_id})
+ same => n,Dial(PJSIP/${{EXTEN}}@{outgoing},60)
+ same => n,Hangup()
+exten => _.,1,Hangup(28)
+
 [sms-{int(device['id'])}]
 exten => _+ZXXXXXXX.,1,Set(GOSIP_SMS_BODY=${{BASE64_ENCODE(${{MESSAGE(body)}})}})
  same => n,AGI(agi://127.0.0.1:4573/sms,{username},${{EXTEN}})
@@ -246,7 +279,11 @@ exten => _.,1,Hangup(28)
 def configure():
     with source() as conn:
         devices = list(conn.execute("SELECT id,username,password_hash FROM devices ORDER BY id"))
-    pjsip, dialplan = render(devices)
+        row = conn.execute("SELECT value FROM config WHERE key='pbx_device_numbers'").fetchone()
+        device_numbers = json.loads(row[0]) if row else {}
+        if not isinstance(device_numbers, dict):
+            raise ValueError("Phone number assignments must be an object")
+    pjsip, dialplan = render(devices, device_numbers)
     digest = hashlib.sha256((pjsip + dialplan).encode()).hexdigest()
     old = STATE / "config.sha256"
     if old.exists() and old.read_text() == digest and (CONF / "pjsip.conf").exists():

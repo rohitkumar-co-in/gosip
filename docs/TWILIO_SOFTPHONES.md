@@ -29,6 +29,9 @@ The Compose file adds `pbx`, sharing GoSIP's existing volume read-only. Its
 - `TWILIO_SIP_DOMAIN`: dedicated Programmable Voice domain with Secure Media.
 - `PBX_TWILIO_USER`, `PBX_TWILIO_PASSWORD`: outbound SIP trunk credential; its
   username must match a GoSIP device for the outgoing webhook.
+- `PBX_TWILIO_DEVICE_PASSWORDS`: optional JSON object mapping additional device
+  usernames to their dedicated Twilio SIP credential passwords. Keep this in
+  Coolify runtime environment settings, never in GoSIP's database or source.
 - `GOSIP_OUTBOUND_CALLER_ID`: SMS/voice-enabled Twilio DID present in GoSIP.
 - `GOSIP_PUBLIC_URL`: canonical HTTPS URL for signed webhook validation.
 - `PBX_DOMAIN`, `PBX_PUBLIC_IP`: public VPS hostname and IPv4 address.
@@ -96,6 +99,23 @@ Manually test incoming/outgoing calls, two-way audio, DTMF, incoming/outgoing SM
 reply to a received message, and operation with the screen locked. Registration
 alone does not prove audio. GoSIP's original SIP call-control API is not connected
 to Asterisk; native softphone call controls remain available.
+
+## Separate numbers on separate phones
+
+Create a distinct GoSIP device and Twilio SIP credential for each additional
+phone, and map its credential list to Calls on the existing SIP domain. Store
+the device's Twilio SIP password in `PBX_TWILIO_DEVICE_PASSWORDS`. The non-secret
+GoSIP configuration key `pbx_device_numbers` holds the username-to-DID assignment,
+for example `{"phone2":"+442345678901"}`. The DID must exist in GoSIP and have
+the requested voice/SMS capability enabled. Unassigned devices retain the
+global `GOSIP_OUTBOUND_CALLER_ID` for compatibility.
+
+Each phone gets a separate authenticated voice context and, for assigned
+additional devices, its own outgoing Twilio endpoint and SIP identity. Both the
+voice webhook and SMS bridge select the sender number from the server-side
+assignment. Configure that DID's ring route to include only its intended phone;
+that route also selects the recipients of incoming SMS. Set its Twilio voice
+and SMS callbacks to GoSIP and check Messaging Service overrides.
 
 For Linphone's **incompatible media parameters** error, check **Media encryption**
 in Settings (under Advanced in some versions): select **SRTP**, and enable
