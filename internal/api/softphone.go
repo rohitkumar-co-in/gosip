@@ -77,6 +77,10 @@ func (h *WebhookHandler) VoiceOutgoing(w http.ResponseWriter, r *http.Request) {
 		h.respondTwiML(w, h.errorTwiML("Outbound caller ID is not configured"))
 		return
 	}
+	if !businessDestinationAllowed(r.Context(), h.deps, number) {
+		h.respondTwiML(w, h.errorTwiML("This destination is blocked by your business usage policy"))
+		return
+	}
 	did, err := h.deps.DB.DIDs.GetByNumber(r.Context(), callerID)
 	if err != nil || !did.VoiceEnabled || !e164Destination.MatchString(did.Number) {
 		h.respondTwiML(w, h.errorTwiML("Outbound caller ID is not configured"))

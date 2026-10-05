@@ -3,8 +3,6 @@ import { RouterView, RouterLink, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import {
   Phone,
-  PhoneCall,
-  Server,
   MessageSquare,
   Voicemail,
   Settings,
@@ -14,8 +12,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
-  X,
-  Smartphone
+  X
 } from 'lucide-vue-next'
 import { ref } from 'vue'
 
@@ -25,12 +22,9 @@ const sidebarOpen = ref(false)
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Devices', href: '/devices', icon: Monitor },
-  { name: 'Provisioning', href: '/provisioning', icon: Smartphone },
+  { name: 'SIP Users', href: '/devices', icon: Monitor },
   { name: 'Phone Numbers', href: '/dids', icon: Phone },
-  { name: 'SIP Trunks', href: '/trunks', icon: Server },
   { name: 'Call Routing', href: '/routes', icon: Route },
-  { name: 'Call Control', href: '/call-control', icon: PhoneCall },
   { name: 'Call History', href: '/calls', icon: Phone },
   { name: 'Messages', href: '/messages', icon: MessageSquare },
   { name: 'Voicemails', href: '/voicemails', icon: Voicemail },
@@ -38,7 +32,7 @@ const navigation = [
 ]
 
 const adminNavigation = [
-  { name: 'Users', href: '/users', icon: Users }
+  { name: 'Administrators', href: '/users', icon: Users }
 ]
 
 function isActive(href: string) {

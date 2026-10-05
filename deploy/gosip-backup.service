@@ -1,0 +1,9 @@
+[Unit]
+Description=GoSIP business database and PBX backup
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /opt/gosip-business-backup.py
+UMask=0077

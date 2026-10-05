@@ -23,6 +23,45 @@ const (
 	contextKeyUser contextKey = "user"
 )
 
+// The hosted PBX console is for administrators. SIP users sign into their
+// phones, not a console with access to other employees' calls and messages.
+// Legacy provisioning writes are blocked to preserve Twilio/PBX consistency.
+func BusinessConsoleBoundary(deps *Dependencies) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if deps.Config.PBXURL != "" {
+				if user := GetUserFromContext(r.Context()); user == nil || user.Role != "admin" {
+					if r.URL.Path != "/api/me" && r.URL.Path != "/api/me/password" {
+						WriteError(w, 403, ErrCodeAuthorization, "This business console requires an administrator account", nil)
+						return
+					}
+				}
+				if r.Method != "GET" && r.Method != "HEAD" && r.Method != "OPTIONS" {
+					for _, path := range []string{"/api/devices", "/api/provisioning", "/api/trunks", "/api/dids"} {
+						if r.URL.Path == path || strings.HasPrefix(r.URL.Path, path+"/") {
+							WriteError(w, 409, ErrCodeConflict, "Manage SIP users and number assignments from the SIP Users page", nil)
+							return
+						}
+					}
+					if origin := r.Header.Get("Origin"); origin != "" {
+						allowed := origin == strings.TrimSuffix(deps.Config.PublicURL, "/")
+						for _, candidate := range deps.Config.CORSOrigins {
+							if origin == candidate {
+								allowed = true
+							}
+						}
+						if !allowed {
+							WriteError(w, 403, ErrCodeAuthorization, "Untrusted request origin", nil)
+							return
+						}
+					}
+				}
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 // AuthMiddleware validates session tokens
 func AuthMiddleware(deps *Dependencies) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -175,6 +214,17 @@ func validateSession(ctx context.Context, database *db.DB, token string) (*model
 	if exists {
 		// Check if cache entry is still valid
 		if time.Since(cached.CachedAt) < cacheExpiry && time.Now().Before(cached.ExpiresAt) {
+			// Revocation must take effect immediately after password changes or
+			// administrator actions, even while an entry is cached.
+			if database != nil && database.Sessions != nil {
+				current, err := database.Sessions.GetByToken(ctx, token)
+				if err != nil || time.Now().After(current.ExpiresAt) {
+					cache.mu.Lock()
+					delete(cache.sessions, token)
+					cache.mu.Unlock()
+					return nil, db.ErrUserNotFound
+				}
+			}
 			// Refresh session expiry (sliding window)
 			newExpiry := time.Now().Add(SessionDuration)
 

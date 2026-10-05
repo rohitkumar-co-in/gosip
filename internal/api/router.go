@@ -53,6 +53,7 @@ func NewRouter(deps *Dependencies) chi.Router {
 	mwiHandler := NewMWIHandler(deps)
 	tlsHandler := NewTLSHandler(deps)
 	trunkHandler := NewTrunkHandler(deps)
+	businessHandler := newBusinessHandler(deps)
 
 	// Health endpoints
 	healthHandler := NewHealthHandler("0.1.0")
@@ -96,6 +97,7 @@ func NewRouter(deps *Dependencies) chi.Router {
 		// Protected routes
 		r.Group(func(r chi.Router) {
 			r.Use(AuthMiddleware(deps))
+			r.Use(BusinessConsoleBoundary(deps))
 
 			// Current user
 			r.Get("/me", authHandler.GetCurrentUser)
@@ -224,6 +226,17 @@ func NewRouter(deps *Dependencies) chi.Router {
 			// Admin-only routes
 			r.Group(func(r chi.Router) {
 				r.Use(AdminOnlyMiddleware)
+				r.Route("/business", func(r chi.Router) {
+					r.Get("/accounts", businessHandler.List)
+					r.Post("/accounts", businessHandler.Provision)
+					r.Put("/accounts/{id}", businessHandler.Provision)
+					r.Post("/accounts/{id}/disable", businessHandler.Disable)
+					r.Get("/numbers", businessHandler.Numbers)
+					r.Get("/audit", businessHandler.Audit)
+					r.Get("/status", businessHandler.Status)
+					r.Get("/policy", businessHandler.Policy)
+					r.Put("/policy", businessHandler.Policy)
+				})
 
 				// Users management
 				r.Route("/users", func(r chi.Router) {

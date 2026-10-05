@@ -17,6 +17,7 @@ import ssl
 import subprocess
 import threading
 import time
+import urllib.request
 
 os.umask(0o077)
 root=Path('/home/ubuntu/gosip-pbx-integration')
@@ -37,6 +38,7 @@ db.execute('INSERT INTO devices VALUES(2,?,?)',('testphone2',hashlib.md5(('testp
 db.execute('INSERT INTO config VALUES(?,?)',('pbx_device_numbers',json.dumps({'testphone2':'+442345678901'})))
 db.execute('INSERT INTO routes VALUES(1,1,?,?)',('ring',json.dumps({'devices':[1]})))
 db.execute('INSERT INTO routes VALUES(2,1,?,?)',('ring',json.dumps({'devices':[2]})))
+db.executescript("CREATE TABLE sip_accounts(device_id INTEGER PRIMARY KEY,enabled INTEGER,state TEXT); INSERT INTO sip_accounts VALUES(1,1,'ready'); INSERT INTO sip_accounts VALUES(2,1,'ready');")
 db.commit()
 received=[]
 invitations=[]
@@ -166,6 +168,17 @@ try:
     queued=docker('exec',container,'python3','-c',"import sqlite3;print(sqlite3.connect('/var/lib/gosip-pbx/delivery.db').execute('SELECT username FROM deliveries WHERE message_id=3').fetchall())")
     assert queued=="[('testphone2',)]",queued
     print('PASS second DID incoming SMS reaches only its assigned phone')
+    private_port=json.loads(docker('inspect',container))[0]['NetworkSettings']['Networks']['bridge']['IPAddress']
+    payload=json.dumps({'username':'testphone2','password':second_password}).encode()
+    req=urllib.request.Request('http://'+private_port+':8088/credentials',data=payload,headers={'Authorization':'Bearer '+secret,'Content-Type':'application/json'})
+    assert urllib.request.urlopen(req,timeout=5).status==200
+    stored=docker('exec',container,'python3','-c',"from pathlib import Path;import json;p=Path('/var/lib/gosip-pbx/credentials.json');print(oct(p.stat().st_mode & 0o777),len(json.loads(p.read_text())))")
+    assert stored=='0o600 1',stored
+    print('PASS authenticated private credential storage is persistent and mode 0600')
+    db.execute("UPDATE sip_accounts SET enabled=0,state='disabled' WHERE device_id=2");db.commit();time.sleep(12)
+    endpoints=docker('exec',container,'asterisk','-rx','pjsip show endpoints')
+    assert 'testphone2/' not in endpoints,endpoints
+    print('PASS disabled SIP user removed from active phone endpoints')
     username='testphone';password=first_password
     # Simulate a Twilio source address only after phone registration tests.
     docker('exec',container,'python3','-c',"from pathlib import Path;p=Path('/etc/asterisk/pjsip.conf');p.write_text(p.read_text().replace('endpoint=twilio-in\\n','endpoint=twilio-in\\nmatch="+gateway+"/32\\n'))")

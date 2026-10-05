@@ -24,27 +24,27 @@ const router = createRouter({
         {
           path: '',
           name: 'dashboard',
-          component: () => import('@/views/DashboardView.vue')
+          component: () => import('@/views/BusinessStatusView.vue')
         },
         {
           path: 'devices',
           name: 'devices',
-          component: () => import('@/views/DevicesView.vue')
+          component: () => import('@/views/SipUsersView.vue')
         },
         {
           path: 'provisioning',
           name: 'provisioning',
-          component: () => import('@/views/ProvisioningView.vue')
+          redirect: '/devices'
         },
         {
           path: 'dids',
           name: 'dids',
-          component: () => import('@/views/DIDsView.vue')
+          component: () => import('@/views/BusinessNumbersView.vue')
         },
         {
           path: 'trunks',
           name: 'trunks',
-          component: () => import('@/views/TrunksView.vue')
+          redirect: '/devices'
         },
         {
           path: 'routes',
@@ -59,7 +59,7 @@ const router = createRouter({
         {
           path: 'call-control',
           name: 'call-control',
-          component: () => import('@/views/CallControlView.vue')
+          redirect: '/devices'
         },
         {
           path: 'messages',
@@ -74,7 +74,7 @@ const router = createRouter({
         {
           path: 'settings',
           name: 'settings',
-          component: () => import('@/views/SettingsView.vue')
+          component: () => import('@/views/BusinessSettingsView.vue')
         },
         {
           path: 'users',

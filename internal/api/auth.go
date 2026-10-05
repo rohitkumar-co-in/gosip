@@ -17,9 +17,9 @@ import (
 
 // AuthHandler handles authentication-related API endpoints
 type AuthHandler struct {
-	deps           *Dependencies
-	loginAttempts  map[string][]time.Time
-	attemptsMu     sync.RWMutex
+	deps          *Dependencies
+	loginAttempts map[string][]time.Time
+	attemptsMu    sync.RWMutex
 }
 
 // NewAuthHandler creates a new AuthHandler
@@ -186,6 +186,10 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate new password
+	if h.deps.Config != nil && h.deps.Config.PBXURL != "" && (len(req.NewPassword) < 12 || len(req.NewPassword) > 72) {
+		WriteValidationError(w, "Use a password of 12 to 72 characters", nil)
+		return
+	}
 	if len(req.NewPassword) < 8 {
 		WriteValidationError(w, "Password must be at least 8 characters", []FieldError{
 			{Field: "new_password", Message: "Password must be at least 8 characters"},
@@ -288,8 +292,16 @@ func (h *AuthHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	} else if !strings.Contains(req.Email, "@") {
 		errors = append(errors, FieldError{Field: "email", Message: "Invalid email format"})
 	}
+	if h.deps.Config != nil && h.deps.Config.PBXURL != "" && (len(req.Password) < 12 || len(req.Password) > 72) {
+		WriteValidationError(w, "Use a password of 12 to 72 characters", nil)
+		return
+	}
 	if len(req.Password) < 8 {
 		errors = append(errors, FieldError{Field: "password", Message: "Password must be at least 8 characters"})
+	}
+	if h.deps.Config != nil && h.deps.Config.PBXURL != "" && req.Role != "admin" {
+		WriteValidationError(w, "Business web console accounts must be administrators. Create phone users under SIP Users", nil)
+		return
 	}
 	if req.Role != "admin" && req.Role != "user" {
 		req.Role = "user"
@@ -378,6 +390,16 @@ func (h *AuthHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if h.deps.Config != nil && h.deps.Config.PBXURL != "" {
+		if req.Role != "" && req.Role != "admin" {
+			WriteValidationError(w, "Business console accounts must remain administrators", nil)
+			return
+		}
+		if req.Password != "" && (len(req.Password) < 12 || len(req.Password) > 72) {
+			WriteValidationError(w, "Use a password of 12 to 72 characters", nil)
+			return
+		}
+	}
 	if req.Email != "" {
 		user.Email = req.Email
 	}
@@ -398,6 +420,12 @@ func (h *AuthHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.Password != "" {
+		if err := h.deps.DB.Sessions.DeleteByUserID(r.Context(), user.ID); err != nil {
+			WriteInternalError(w)
+			return
+		}
+	}
 	WriteJSON(w, http.StatusOK, toUserResponse(user))
 }
 

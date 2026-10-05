@@ -23,7 +23,7 @@ const form = ref({
   email: '',
   name: '',
   password: '',
-  role: 'user' as 'admin' | 'user'
+  role: 'admin' as 'admin' | 'user'
 })
 
 onMounted(async () => {
@@ -45,7 +45,7 @@ async function loadUsers() {
 
 function openCreateModal() {
   editingUser.value = null
-  form.value = { email: '', name: '', password: '', role: 'user' }
+  form.value = { email: '', name: '', password: '', role: 'admin' }
   showModal.value = true
 }
 
@@ -109,7 +109,7 @@ function formatDate(dateStr: string | undefined): string {
   <div>
     <div class="flex justify-between items-center">
       <div>
-        <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Users</h1>
+        <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Web console administrators</h1>
         <p class="mt-1 text-sm text-gray-500">
           {{ users.length }} user{{ users.length !== 1 ? 's' : '' }}
         </p>
@@ -126,7 +126,7 @@ function formatDate(dateStr: string | undefined): string {
           class="flex items-center px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90"
         >
           <Plus class="h-4 w-4 mr-2" />
-          Add User
+          Add administrator
         </button>
       </div>
     </div>
@@ -220,7 +220,7 @@ function formatDate(dateStr: string | undefined): string {
 
         <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
           <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
-            {{ editingUser ? 'Edit User' : 'Add User' }}
+            {{ editingUser ? 'Edit User' : 'Add administrator' }}
           </h3>
 
           <form @submit.prevent="handleSubmit" class="space-y-4">
@@ -239,27 +239,15 @@ function formatDate(dateStr: string | undefined): string {
 
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Display Name
-              </label>
-              <input
-                v-model="form.name"
-                type="text"
-                class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
-                placeholder="John Doe"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Password {{ editingUser ? '(leave blank to keep current)' : '' }}
               </label>
               <input
                 v-model="form.password"
                 type="password"
                 :required="!editingUser"
-                minlength="8"
+                minlength="12"
                 class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
-                placeholder="Minimum 8 characters"
+                placeholder="Minimum 12 characters"
               />
             </div>
 
@@ -271,7 +259,7 @@ function formatDate(dateStr: string | undefined): string {
                 v-model="form.role"
                 class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
               >
-                <option value="user">User</option>
+
                 <option value="admin">Admin</option>
               </select>
             </div>

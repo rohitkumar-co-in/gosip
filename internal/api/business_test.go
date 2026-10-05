@@ -1,0 +1,223 @@
+package api
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strings"
+	"testing"
+
+	"github.com/btafoya/gosip/internal/config"
+	"github.com/btafoya/gosip/internal/models"
+	"github.com/btafoya/gosip/pkg/sip"
+	"github.com/go-chi/chi/v5"
+)
+
+type businessTransport func(*http.Request) (*http.Response, error)
+
+func (f businessTransport) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+func TestBusinessProvisioningLifecycle(t *testing.T) {
+	setup := setupTestAPI(t)
+	ctx := context.Background()
+	suffix := strings.Repeat("a", 32)
+	sid := "AC" + suffix
+	list := "CL" + suffix
+	domain := "SD" + suffix
+	pn := "PN" + suffix
+	cred := "CR" + suffix
+	cfg := &config.Config{TwilioAccountSID: sid, TwilioAuthToken: "secret-token", TwilioSIPDomain: "test.sip.twilio.com", PublicURL: "https://sip.example.test", PBXSIPDomain: "sip.example.test", PBXURL: "http://pbx.test", PBXSecret: "pbx-secret"}
+	deps := &Dependencies{DB: setup.DB, Config: cfg}
+	h := newBusinessHandler(deps)
+	setup.DB.Config.Set(ctx, "pbx_twilio_domain_sid", domain)
+	setup.DB.Config.Set(ctx, "pbx_twilio_credential_list_sid", list)
+	credentialExists := false
+	credentialPassword := ""
+	pbxPassword := ""
+	numberUpdated := false
+	failPBX := false
+	fake := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/credentials") {
+			if failPBX {
+				w.WriteHeader(503)
+				return
+			}
+			if r.Header.Get("Authorization") != "Bearer pbx-secret" {
+				t.Error("Missing private PBX authentication")
+			}
+			var v map[string]string
+			json.NewDecoder(r.Body).Decode(&v)
+			pbxPassword = v["password"]
+			fmt.Fprint(w, `{"saved":true}`)
+			return
+		}
+		if strings.HasSuffix(r.URL.Path, "/registrations") {
+			fmt.Fprint(w, `[]`)
+			return
+		}
+		user, token, _ := r.BasicAuth()
+		if user != sid || token != "secret-token" {
+			t.Error("Missing Twilio authentication")
+		}
+		path := r.URL.Path
+		switch {
+		case strings.HasSuffix(path, "/IncomingPhoneNumbers.json"):
+			fmt.Fprintf(w, `{"incoming_phone_numbers":[{"sid":%q,"phone_number":"+442345678901","capabilities":{"voice":true,"sms":true}}]}`, pn)
+		case strings.HasSuffix(path, "/Domains/"+domain+".json"):
+			fmt.Fprint(w, `{"domain_name":"test.sip.twilio.com","secure":true}`)
+		case strings.HasSuffix(path, "/CredentialListMappings.json"):
+			fmt.Fprintf(w, `{"contents":[{"sid":%q}]}`, list)
+		case strings.HasSuffix(path, "/Credentials.json") && r.Method == "GET":
+			if credentialExists {
+				fmt.Fprintf(w, `{"credentials":[{"sid":%q,"username":"employee"}]}`, cred)
+			} else {
+				fmt.Fprint(w, `{"credentials":[]}`)
+			}
+		case strings.Contains(path, "/Credentials") && r.Method == "POST":
+			r.ParseForm()
+			credentialPassword = r.Form.Get("Password")
+			credentialExists = true
+			fmt.Fprintf(w, `{"sid":%q}`, cred)
+		case strings.Contains(path, "/Credentials/") && r.Method == "DELETE":
+			credentialExists = false
+			w.WriteHeader(204)
+		case strings.HasSuffix(path, "/Services"):
+			fmt.Fprint(w, `{"services":[],"meta":{}}`)
+		case strings.HasSuffix(path, "/IncomingPhoneNumbers/"+pn+".json"):
+			r.ParseForm()
+			if r.Form.Get("SmsUrl") != cfg.PublicURL+"/api/webhooks/sms/incoming" || r.Form.Get("VoiceUrl") != cfg.PublicURL+"/api/webhooks/voice/incoming" {
+				t.Error("Number callbacks not configured")
+			}
+			numberUpdated = true
+			fmt.Fprint(w, `{}`)
+		default:
+			t.Errorf("Unexpected fake request: %s %s", r.Method, path)
+			w.WriteHeader(404)
+		}
+	}))
+	defer fake.Close()
+	fakeURL, _ := url.Parse(fake.URL)
+	h.client = &http.Client{Transport: businessTransport(func(r *http.Request) (*http.Response, error) {
+		copy := r.Clone(r.Context())
+		u := *r.URL
+		u.Scheme = fakeURL.Scheme
+		u.Host = fakeURL.Host
+		copy.URL = &u
+		return http.DefaultTransport.RoundTrip(copy)
+	})}
+	invoke := func(method, path, body string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(method, path, strings.NewReader(body))
+		req = req.WithContext(context.WithValue(req.Context(), contextKeyUser, &models.User{ID: 1, Role: "admin"}))
+		rec := httptest.NewRecorder()
+		router := chi.NewRouter()
+		router.Post("/accounts", h.Provision)
+		router.Put("/accounts/{id}", h.Provision)
+		router.Post("/accounts/{id}/disable", h.Disable)
+		router.ServeHTTP(rec, req)
+		return rec
+	}
+	result := invoke("POST", "/accounts", `{"name":"Employee","username":"employee","number":"+442345678901"}`)
+	assertStatus(t, result, 200)
+	var response struct {
+		ID       int64  `json:"id"`
+		Password string `json:"password"`
+	}
+	json.Unmarshal(result.Body.Bytes(), &response)
+	if len(response.Password) < 24 || credentialPassword == response.Password || pbxPassword != credentialPassword || !numberUpdated {
+		t.Fatal("Separate phone/PBX credential provisioning failed")
+	}
+	device, _ := setup.DB.Devices.GetByID(ctx, response.ID)
+	if device.PasswordHash != sip.GenerateHA1("employee", "gosip", response.Password) {
+		t.Fatal("Phone password was not hashed")
+	}
+	did, _ := setup.DB.DIDs.GetByNumber(ctx, "+442345678901")
+	if did.TwilioSID != pn {
+		t.Fatal("Number SID was lost")
+	}
+	routes, _ := setup.DB.Routes.GetByDID(ctx, did.ID)
+	if len(routes) != 1 || !strings.Contains(string(routes[0].ActionData), `"devices":[`) {
+		t.Fatal("Incoming call/SMS route is incompatible")
+	}
+	var audit int
+	setup.DB.Conn().QueryRow("SELECT COUNT(*) FROM business_audit").Scan(&audit)
+	if audit != 1 {
+		t.Fatal("No provisioning audit entry")
+	}
+	conflict := invoke("POST", "/accounts", `{"name":"Other","username":"other","number":"+442345678901"}`)
+	assertStatus(t, conflict, 409)
+	owned := invoke("POST", "/accounts", `{"name":"Other","username":"other","number":"+442345678902"}`)
+	assertStatus(t, owned, 400)
+	failPBX = true
+	failed := invoke("PUT", fmt.Sprintf("/accounts/%d", response.ID), `{"name":"Employee","number":"+442345678901"}`)
+	assertStatus(t, failed, 502)
+	if _, err := deviceOutboundNumber(ctx, deps, "employee"); err == nil {
+		t.Fatal("Partially provisioned account must fail closed")
+	}
+	failPBX = false
+	retried := invoke("PUT", fmt.Sprintf("/accounts/%d", response.ID), `{"name":"Employee","number":"+442345678901"}`)
+	assertStatus(t, retried, 200)
+	device, _ = setup.DB.Devices.GetByID(ctx, response.ID)
+	if device.PasswordHash != sip.GenerateHA1("employee", "gosip", response.Password) {
+		t.Fatal("Retry unexpectedly reset phone password")
+	}
+	disabled := invoke("POST", fmt.Sprintf("/accounts/%d/disable", response.ID), "")
+	assertStatus(t, disabled, 200)
+	if credentialExists {
+		t.Fatal("Disabled user's Twilio credential was not revoked")
+	}
+	if _, err := deviceOutboundNumber(ctx, deps, "employee"); err == nil {
+		t.Fatal("Disabled user retained outgoing number")
+	}
+	routes, _ = setup.DB.Routes.GetByDID(ctx, did.ID)
+	if len(routes) != 1 || routes[0].Enabled {
+		t.Fatal("Disabled user still receives inbound calls/SMS")
+	}
+}
+func TestBusinessConsoleBoundary(t *testing.T) {
+	deps := &Dependencies{Config: &config.Config{PBXURL: "http://pbx", PublicURL: "https://sip.test"}}
+	for _, test := range []struct {
+		role, method, path, origin string
+		want                       int
+	}{{"user", "GET", "/api/messages", "", 403}, {"admin", "POST", "/api/devices", "", 409}, {"admin", "POST", "/api/business/accounts", "https://evil.test", 403}, {"admin", "GET", "/api/messages", "", 204}} {
+		req := httptest.NewRequest(test.method, test.path, nil)
+		req.Header.Set("Origin", test.origin)
+		req = req.WithContext(context.WithValue(req.Context(), contextKeyUser, &models.User{Role: test.role}))
+		rec := httptest.NewRecorder()
+		BusinessConsoleBoundary(deps)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) })).ServeHTTP(rec, req)
+		assertStatus(t, rec, test.want)
+	}
+}
+func TestBusinessPolicyAndSessionRevocation(t *testing.T) {
+	setup := setupTestAPI(t)
+	ctx := context.Background()
+	deps := &Dependencies{DB: setup.DB, Config: &config.Config{PBXURL: "http://pbx"}}
+	setup.DB.Config.Set(ctx, "business_policy", `{"allowed_prefixes":["+44","+91"],"sms_per_minute":1}`)
+	if !businessDestinationAllowed(ctx, deps, "+441234567890") || businessDestinationAllowed(ctx, deps, "+11234567890") {
+		t.Fatal("Country restrictions were not enforced")
+	}
+	if !businessSMSLimit(ctx, deps, "+441234567890") {
+		t.Fatal("First SMS should be allowed")
+	}
+	setup.DB.Conn().Exec("INSERT INTO messages(direction,from_number,to_number,body,status,created_at) VALUES('outbound','+441234567890','+441234567891','test','queued',CURRENT_TIMESTAMP)")
+	if businessSMSLimit(ctx, deps, "+441234567890") {
+		t.Fatal("SMS rate limit was not enforced")
+	}
+	setup.DB.Config.Set(ctx, "business_policy", `invalid`)
+	if businessDestinationAllowed(ctx, deps, "+441234567890") {
+		t.Fatal("Corrupt usage policy must fail closed")
+	}
+	user := createTestUser(t, setup.DB, "admin@company.test", "long-test-password", "admin")
+	token, err := createSessionWithRequest(ctx, setup.DB, user.ID, "test", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = validateSession(ctx, setup.DB, token); err != nil {
+		t.Fatal(err)
+	}
+	setup.DB.Sessions.DeleteByUserID(ctx, user.ID)
+	if _, err = validateSession(ctx, setup.DB, token); err == nil {
+		t.Fatal("Revoked cached session was accepted")
+	}
+}

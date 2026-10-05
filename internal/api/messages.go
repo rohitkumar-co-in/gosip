@@ -124,15 +124,20 @@ func (h *MessageHandler) List(w http.ResponseWriter, r *http.Request) {
 
 // SendMessageRequest represents a message send request
 type SendMessageRequest struct {
-	DIDID        int64    `json:"did_id"`
-	ToNumber     string   `json:"to_number"`
-	Body         string   `json:"body"`
-	MediaURLs    []string `json:"media_urls,omitempty"`
+	DIDID     int64    `json:"did_id"`
+	ToNumber  string   `json:"to_number"`
+	Body      string   `json:"body"`
+	MediaURLs []string `json:"media_urls,omitempty"`
 }
 
 // Send sends a new SMS/MMS message
 func (h *MessageHandler) Send(w http.ResponseWriter, r *http.Request) {
+	if h.deps.Config != nil && h.deps.Config.PBXURL != "" {
+		businessSMSMu.Lock()
+		defer businessSMSMu.Unlock()
+	}
 	var req SendMessageRequest
+	r.Body = http.MaxBytesReader(w, r.Body, 16384)
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		WriteValidationError(w, "Invalid request body", nil)
 		return
@@ -168,6 +173,14 @@ func (h *MessageHandler) Send(w http.ResponseWriter, r *http.Request) {
 
 	if !did.SMSEnabled {
 		WriteError(w, http.StatusBadRequest, ErrCodeBadRequest, "DID is not SMS-enabled", nil)
+		return
+	}
+	if !businessDestinationAllowed(r.Context(), h.deps, req.ToNumber) {
+		WriteError(w, 403, ErrCodeAuthorization, "This destination is blocked by the business usage policy", nil)
+		return
+	}
+	if !businessSMSLimit(r.Context(), h.deps, did.Number) {
+		WriteError(w, 429, ErrCodeRateLimited, "SMS limit reached for this number. Wait one minute before retrying", nil)
 		return
 	}
 
@@ -458,11 +471,11 @@ func (h *MessageHandler) UpdateAutoReply(w http.ResponseWriter, r *http.Request)
 	}
 
 	type UpdateAutoReplyRequest struct {
-		DIDID       *int64  `json:"did_id,omitempty"`
-		TriggerType string  `json:"trigger_type,omitempty"`
-		TriggerData string  `json:"trigger_data,omitempty"`
-		ReplyText   string  `json:"reply_text,omitempty"`
-		Enabled     *bool   `json:"enabled,omitempty"`
+		DIDID       *int64 `json:"did_id,omitempty"`
+		TriggerType string `json:"trigger_type,omitempty"`
+		TriggerData string `json:"trigger_data,omitempty"`
+		ReplyText   string `json:"reply_text,omitempty"`
+		Enabled     *bool  `json:"enabled,omitempty"`
 	}
 
 	var req UpdateAutoReplyRequest

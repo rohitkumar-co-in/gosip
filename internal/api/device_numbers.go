@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +12,18 @@ import (
 
 // Number assignments are server-side settings, never supplied by the phone.
 func deviceOutboundNumber(ctx context.Context, deps *Dependencies, username string) (string, error) {
+	var enabled bool
+	var state string
+	err := deps.DB.Conn().QueryRowContext(ctx, "SELECT a.enabled,a.state FROM sip_accounts a JOIN devices d ON d.id=a.device_id WHERE d.username=?", username).Scan(&enabled, &state)
+	if err == nil && (!enabled || state != "ready") {
+		return "", fmt.Errorf("SIP account is not active")
+	}
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return "", err
+	}
+	if errors.Is(err, sql.ErrNoRows) && deps.Config.PBXURL != "" {
+		return "", fmt.Errorf("SIP account is not provisioned")
+	}
 	value, err := deps.DB.Config.Get(ctx, "pbx_device_numbers")
 	if errors.Is(err, db.ErrConfigNotFound) {
 		return deps.Config.OutboundCallerID, nil

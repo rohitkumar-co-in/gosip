@@ -485,7 +485,10 @@ func TestAuthMiddleware(t *testing.T) {
 	user := createTestUserWithBcrypt(t, setup, "test@example.com", "password", "user")
 
 	// Create session manually for testing
-	token, _ := createSession(user.ID)
+	token, err := createSessionWithRequest(context.Background(), setup.DB, user.ID, "test", "")
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	middleware := AuthMiddleware(deps)
 	handler := middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

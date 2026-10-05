@@ -38,6 +38,7 @@ AMI_SECRET = secrets.token_hex(32)
 PROCESS = None
 STOP = threading.Event()
 LAST_POLL = 0
+CONFIG_LOCK = threading.RLock()
 
 
 def safe(value, pattern=USERNAME):
@@ -83,6 +84,10 @@ def render(devices, device_numbers=None):
     incoming_password = safe(os.environ["GOSIP_PBX_TRUNK_PASSWORD"])
     device_numbers = device_numbers or {}
     device_passwords = json.loads(os.getenv("PBX_TWILIO_DEVICE_PASSWORDS") or "{}")
+    credential_file = STATE / "credentials.json"
+    if credential_file.exists():
+        device_passwords.update(json.loads(credential_file.read_text()))
+    trunk_password = safe(device_passwords.get(trunk_user, trunk_password))
     pjsip = f"""[global]
 type=global
 user_agent=GoSIP-Asterisk
@@ -262,9 +267,12 @@ rtp_keepalive=20
         outgoing = f"twilio-out-{identifier}" if username in device_numbers and username != trunk_user else "twilio-out"
         dialplan += f"""
 [from-phone-{identifier}]
-exten => _+ZXXXXXXX.,1,Set(CALLERID(num)={caller_id})
+exten => _+ZXXXXXXX.,1,Set(GROUP()=phone-{identifier})
+ same => n,GotoIf($[${{GROUP_COUNT(phone-{identifier})}} > 2]?busy)
+ same => n,Set(CALLERID(num)={caller_id})
  same => n,Dial(PJSIP/${{EXTEN}}@{outgoing},60)
  same => n,Hangup()
+ same => n(busy),Hangup(17)
 exten => _.,1,Hangup(28)
 
 [sms-{int(device['id'])}]
@@ -279,6 +287,9 @@ exten => _.,1,Hangup(28)
 def configure():
     with source() as conn:
         devices = list(conn.execute("SELECT id,username,password_hash FROM devices ORDER BY id"))
+        if conn.execute("SELECT 1 FROM sqlite_master WHERE name='sip_accounts'").fetchone():
+            inactive = {row[0] for row in conn.execute("SELECT device_id FROM sip_accounts WHERE enabled=0 OR state<>'ready'")}
+            devices = [d for d in devices if d['id'] not in inactive]
         row = conn.execute("SELECT value FROM config WHERE key='pbx_device_numbers'").fetchone()
         device_numbers = json.loads(row[0]) if row else {}
         if not isinstance(device_numbers, dict):
@@ -424,6 +435,38 @@ class HTTP(http.server.BaseHTTPRequestHandler):
     def log_message(self, *_):
         pass
 
+    def do_POST(self):
+        if not SECRET or not hmac.compare_digest(self.headers.get("Authorization", ""), "Bearer " + SECRET):
+            self.send_error(403)
+            return
+        if self.path != "/credentials":
+            self.send_error(404)
+            return
+        try:
+            length = int(self.headers.get('Content-Length', '0'))
+            if not 0 < length <= 4096:
+                raise ValueError('Invalid request size')
+            request = json.loads(self.rfile.read(length))
+            username = safe(request['username'])
+            password = safe(request['password'])
+            if not 16 <= len(password) <= 128:
+                raise ValueError('Invalid credential')
+            with source() as conn:
+                if not conn.execute('SELECT 1 FROM devices WHERE username=?', (username,)).fetchone():
+                    raise ValueError('Unknown device')
+            with CONFIG_LOCK:
+                path = STATE / 'credentials.json'
+                credentials = json.loads(path.read_text()) if path.exists() else {}
+                credentials[username] = password
+                atomic(path, json.dumps(credentials))
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b'{"saved":true}')
+        except (ValueError, KeyError, TypeError):
+            self.send_error(400, 'Invalid credential request')
+        except Exception:
+            self.send_error(503, 'Credential storage unavailable')
+
     def do_GET(self):
         if self.path == "/health":
             ok = PROCESS is not None and PROCESS.poll() is None and time.time() - LAST_POLL < 60
@@ -433,6 +476,14 @@ class HTTP(http.server.BaseHTTPRequestHandler):
             return
         if not SECRET or not hmac.compare_digest(self.headers.get("Authorization", ""), "Bearer " + SECRET):
             self.send_error(403)
+            return
+        if self.path == '/backup-status':
+            path = STATE / 'backup-status.json'
+            body = path.read_bytes() if path.exists() else b'{}'
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(body)
             return
         if self.path != "/registrations":
             self.send_error(404)
