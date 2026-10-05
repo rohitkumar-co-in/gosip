@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/btafoya/gosip/internal/config"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -11,11 +12,11 @@ import (
 
 func TestSystemHandler_GetConfig(t *testing.T) {
 	setup := setupTestAPI(t)
-	deps := &Dependencies{DB: setup.DB}
+	deps := &Dependencies{Config: &config.Config{DataDir: t.TempDir()}, DB: setup.DB}
 	handler := NewSystemHandler(deps)
 
 	// Set some config values
-	setup.DB.Config.Set(context.Background(), "twilio_account_sid", "AC123456789")
+	deps.Config.SaveTwilioEnv("AC123456789", "test-token")
 	setup.DB.Config.Set(context.Background(), "smtp_host", "smtp.example.com")
 	setup.DB.Config.Set(context.Background(), "voicemail_enabled", "true")
 
@@ -45,7 +46,7 @@ func TestSystemHandler_GetConfig(t *testing.T) {
 
 func TestSystemHandler_GetConfig_Empty(t *testing.T) {
 	setup := setupTestAPI(t)
-	deps := &Dependencies{DB: setup.DB}
+	deps := &Dependencies{Config: &config.Config{DataDir: t.TempDir()}, DB: setup.DB}
 	handler := NewSystemHandler(deps)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/system/config", nil)
@@ -67,7 +68,7 @@ func TestSystemHandler_GetConfig_Empty(t *testing.T) {
 
 func TestSystemHandler_UpdateConfig(t *testing.T) {
 	setup := setupTestAPI(t)
-	deps := &Dependencies{DB: setup.DB}
+	deps := &Dependencies{Config: &config.Config{DataDir: t.TempDir()}, DB: setup.DB}
 	handler := NewSystemHandler(deps)
 
 	reqBody := UpdateConfigRequest{
@@ -97,7 +98,7 @@ func TestSystemHandler_UpdateConfig(t *testing.T) {
 
 func TestSystemHandler_UpdateConfig_AllFields(t *testing.T) {
 	setup := setupTestAPI(t)
-	deps := &Dependencies{DB: setup.DB, Twilio: setup.Twilio}
+	deps := &Dependencies{Config: &config.Config{DataDir: t.TempDir()}, DB: setup.DB, Twilio: setup.Twilio}
 	handler := NewSystemHandler(deps)
 
 	tests := []struct {
@@ -158,6 +159,9 @@ func TestSystemHandler_UpdateConfig_AllFields(t *testing.T) {
 
 			// Verify the value was set
 			value, _ := setup.DB.Config.Get(context.Background(), tt.checkKey)
+			if tt.checkKey == "twilio_account_sid" {
+				value, _ = deps.Config.TwilioCredentials()
+			}
 			if value != tt.expected {
 				t.Errorf("Expected %s to be '%s', got '%s'", tt.checkKey, tt.expected, value)
 			}
@@ -167,7 +171,7 @@ func TestSystemHandler_UpdateConfig_AllFields(t *testing.T) {
 
 func TestSystemHandler_UpdateConfig_EmptyRequest(t *testing.T) {
 	setup := setupTestAPI(t)
-	deps := &Dependencies{DB: setup.DB}
+	deps := &Dependencies{Config: &config.Config{DataDir: t.TempDir()}, DB: setup.DB}
 	handler := NewSystemHandler(deps)
 
 	// Empty request should succeed but not change anything
@@ -185,7 +189,7 @@ func TestSystemHandler_UpdateConfig_EmptyRequest(t *testing.T) {
 
 func TestSystemHandler_UpdateConfig_InvalidJSON(t *testing.T) {
 	setup := setupTestAPI(t)
-	deps := &Dependencies{DB: setup.DB}
+	deps := &Dependencies{Config: &config.Config{DataDir: t.TempDir()}, DB: setup.DB}
 	handler := NewSystemHandler(deps)
 
 	req := httptest.NewRequest(http.MethodPut, "/api/system/config", bytes.NewBuffer([]byte("invalid json")))
@@ -199,7 +203,7 @@ func TestSystemHandler_UpdateConfig_InvalidJSON(t *testing.T) {
 
 func TestSystemHandler_SetupWizard(t *testing.T) {
 	setup := setupTestAPI(t)
-	deps := &Dependencies{DB: setup.DB, Twilio: setup.Twilio}
+	deps := &Dependencies{Config: &config.Config{DataDir: t.TempDir()}, DB: setup.DB, Twilio: setup.Twilio}
 	handler := NewSystemHandler(deps)
 
 	reqBody := SetupWizardRequest{
@@ -225,7 +229,7 @@ func TestSystemHandler_SetupWizard(t *testing.T) {
 	}
 
 	// Verify Twilio credentials were saved
-	sid, _ := setup.DB.Config.Get(context.Background(), "twilio_account_sid")
+	sid, _ := deps.Config.TwilioCredentials()
 	if sid != "AC123456789" {
 		t.Errorf("Expected Twilio SID 'AC123456789', got %s", sid)
 	}
@@ -233,7 +237,7 @@ func TestSystemHandler_SetupWizard(t *testing.T) {
 
 func TestSystemHandler_SetupWizard_AlreadyCompleted(t *testing.T) {
 	setup := setupTestAPI(t)
-	deps := &Dependencies{DB: setup.DB}
+	deps := &Dependencies{Config: &config.Config{DataDir: t.TempDir()}, DB: setup.DB}
 	handler := NewSystemHandler(deps)
 
 	// Mark setup as completed
@@ -258,7 +262,7 @@ func TestSystemHandler_SetupWizard_AlreadyCompleted(t *testing.T) {
 
 func TestSystemHandler_SetupWizard_ValidationError(t *testing.T) {
 	setup := setupTestAPI(t)
-	deps := &Dependencies{DB: setup.DB}
+	deps := &Dependencies{Config: &config.Config{DataDir: t.TempDir()}, DB: setup.DB}
 	handler := NewSystemHandler(deps)
 
 	tests := []struct {
@@ -317,7 +321,7 @@ func TestSystemHandler_SetupWizard_ValidationError(t *testing.T) {
 
 func TestSystemHandler_SetupWizard_WithSMTP(t *testing.T) {
 	setup := setupTestAPI(t)
-	deps := &Dependencies{DB: setup.DB, Twilio: setup.Twilio}
+	deps := &Dependencies{Config: &config.Config{DataDir: t.TempDir()}, DB: setup.DB, Twilio: setup.Twilio}
 	handler := NewSystemHandler(deps)
 
 	reqBody := SetupWizardRequest{
@@ -349,7 +353,7 @@ func TestSystemHandler_SetupWizard_WithSMTP(t *testing.T) {
 
 func TestSystemHandler_SetupWizard_WithGotify(t *testing.T) {
 	setup := setupTestAPI(t)
-	deps := &Dependencies{DB: setup.DB, Twilio: setup.Twilio}
+	deps := &Dependencies{Config: &config.Config{DataDir: t.TempDir()}, DB: setup.DB, Twilio: setup.Twilio}
 	handler := NewSystemHandler(deps)
 
 	reqBody := SetupWizardRequest{
@@ -379,7 +383,7 @@ func TestSystemHandler_SetupWizard_WithGotify(t *testing.T) {
 
 func TestSystemHandler_GetStatus(t *testing.T) {
 	setup := setupTestAPI(t)
-	deps := &Dependencies{DB: setup.DB, SIP: nil, Twilio: setup.Twilio}
+	deps := &Dependencies{Config: &config.Config{DataDir: t.TempDir()}, DB: setup.DB, SIP: nil, Twilio: setup.Twilio}
 	handler := NewSystemHandler(deps)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/system/status", nil)
@@ -410,7 +414,7 @@ func TestSystemHandler_GetStatus_Degraded(t *testing.T) {
 		return false
 	}
 
-	deps := &Dependencies{DB: setup.DB, SIP: nil, Twilio: setup.Twilio}
+	deps := &Dependencies{Config: &config.Config{DataDir: t.TempDir()}, DB: setup.DB, SIP: nil, Twilio: setup.Twilio}
 	handler := NewSystemHandler(deps)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/system/status", nil)
@@ -429,7 +433,7 @@ func TestSystemHandler_GetStatus_Degraded(t *testing.T) {
 
 func TestSystemHandler_CreateBackup(t *testing.T) {
 	setup := setupTestAPI(t)
-	deps := &Dependencies{DB: setup.DB}
+	deps := &Dependencies{Config: &config.Config{DataDir: t.TempDir()}, DB: setup.DB}
 	handler := NewSystemHandler(deps)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/system/backup", nil)
@@ -445,7 +449,7 @@ func TestSystemHandler_CreateBackup(t *testing.T) {
 
 func TestSystemHandler_ListBackups(t *testing.T) {
 	setup := setupTestAPI(t)
-	deps := &Dependencies{DB: setup.DB}
+	deps := &Dependencies{Config: &config.Config{DataDir: t.TempDir()}, DB: setup.DB}
 	handler := NewSystemHandler(deps)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/system/backups", nil)
@@ -460,7 +464,7 @@ func TestSystemHandler_ListBackups(t *testing.T) {
 
 func TestNewSystemHandler(t *testing.T) {
 	setup := setupTestAPI(t)
-	deps := &Dependencies{DB: setup.DB}
+	deps := &Dependencies{Config: &config.Config{DataDir: t.TempDir()}, DB: setup.DB}
 	handler := NewSystemHandler(deps)
 
 	if handler == nil {
@@ -476,7 +480,7 @@ func TestNewSystemHandler(t *testing.T) {
 
 func TestSystemHandler_GetConfig_FullSID(t *testing.T) {
 	setup := setupTestAPI(t)
-	deps := &Dependencies{DB: setup.DB}
+	deps := &Dependencies{Config: &config.Config{DataDir: t.TempDir()}, DB: setup.DB}
 	handler := NewSystemHandler(deps)
 
 	// Admin-only endpoint should return full SIDs
@@ -491,7 +495,7 @@ func TestSystemHandler_GetConfig_FullSID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.sid, func(t *testing.T) {
-			setup.DB.Config.Set(context.Background(), "twilio_account_sid", tt.sid)
+			deps.Config.SaveTwilioEnv(tt.sid, "test-token")
 
 			req := httptest.NewRequest(http.MethodGet, "/api/system/config", nil)
 			rr := httptest.NewRecorder()

@@ -1,134 +1,201 @@
-# GoSIP deployment investigation
+# GoSIP deployment report
 
-Inspected upstream `main` at `533cc6704720f6c9e2ec4d94a31f1b2af1598423` on 2026-10-05.
+Date: 2026-10-05 (Asia/Calcutta)
 
-## Repository and failure findings
+## Repository structure
 
-The root contains Dockerfile, go.mod (Go 1.23.0), go.sum, docker-compose.yml,
-docker-compose.dev.yml, .env.example, Makefile, README.md, cmd/gosip/main.go,
-frontend/package.json, and frontend/pnpm-lock.yaml (lockfile version 9).
-There was no .dockerignore. SQL migrations live in internal/db/migrations and
-are embedded by internal/db/db.go; there is no root migrations directory.
-The Vue frontend builds to frontend/dist, served by the Go HTTP router.
-SQLite uses CGO through github.com/mattn/go-sqlite3; no external database server
-is required.
+Inspected upstream main at 533cc6704720f6c9e2ec4d94a31f1b2af1598423.
+The root has Dockerfile, go.mod, go.sum, Makefile, .env.example, README.md,
+docker-compose.yml and docker-compose.dev.yml. cmd/gosip/main.go is the Go
+entry point. frontend/package.json and frontend/pnpm-lock.yaml define the Vue
+frontend, whose output is frontend/dist. SQL migrations are under
+internal/db/migrations and embedded in the binary by internal/db/db.go.
+There is no root migrations directory and originally no .dockerignore.
+SQLite uses CGO through mattn/go-sqlite3; no database server is required.
 
-The reported missing frontend and go.sum files exist in this checkout. A 5.35kB
-context does not match this source tree. The actual Coolify resource has not yet
-been inspected, so a wrong base directory, different source/ref, or Dockerfile
-resource without Git remains a hypothesis. Coolify documents that its
-Dockerfile-without-Git resource has no repository context:
-https://coolify.io/docs/applications/builds/dockerfile
+Maintained repository: https://github.com/rohitkumar-co-in/gosip, branch main.
+Local origin points there; upstream retains https://github.com/btafoya/gosip.
 
-## Local changes
+## Confirmed root cause
 
-- Dockerfile: Go 1.21 -> 1.23, matching go.mod and CI.
-- Install pinned pnpm 10.11.0 using npm instead of Corepack's mutable latest.
-  CI selects pnpm major 10; the frozen lockfile install passed with this version.
-- Require frontend/pnpm-lock.yaml explicitly in COPY.
-- Remove forced Go rebuild (-a); compile with GOMAXPROCS=1 and -p 1 to reduce
-  concurrent compiler work on the small server. Keep CGO and static linking.
-- Remove COPY of nonexistent /app/migrations; migrations are embedded.
-- Keep Node 20, runtime dependencies, non-root UID/GID 1000, health check,
-  frontend asset copy, ports, and persistent /app/data volume.
-- Add .dockerignore excluding Git, dependencies, built assets, generated build
-  metadata, runtime databases/media, local environment files, keys and logs.
-  Go modules, frontend source/lockfile, cmd, and embedded migrations remain included.
-- Fix existing frontend type-check failures: remove unused imports/variables,
-  add Vite ambient types, use device username as an extension fallback, expose
-  browser origin through a script variable, and remove access to a nonexistent
-  authenticated-user name property. Type checking remains enabled.
+The old Coolify application gq2rsvuy5pxcyeg8veyrvmp3 used an inline Dockerfile
+without checking out GoSIP. Its repository field was coollabsio/coolify.
+Docker therefore received a tiny context without go.sum or frontend. Setting
+Base Directory to / alone cannot supply source files in that deployment mode.
+Coolify documentation: https://coolify.io/docs/applications/builds/dockerfile
 
-## Intended Coolify settings (not applied yet)
+## Exact build changes
+
+Dockerfile:
+- golang:1.21-alpine -> golang:1.23-alpine, matching go.mod and CI.
+- Replace mutable Corepack pnpm@latest with npm install --global pnpm@10.11.0.
+  CI uses pnpm major 10; this version passed the frozen lockfile install.
+- Require frontend/pnpm-lock.yaml explicitly rather than a wildcard.
+- Remove go build -a and add GOMAXPROCS=1 plus -p 1 to limit compiler concurrency.
+- Remove COPY /app/migrations: migrations are embedded from internal/db/migrations.
+- Retain Node 20, CGO/static linking, Alpine runtime dependencies, UID/GID 1000,
+  frontend output copy, HTTP health check, exposed ports and /app/data volume.
+
+Added .dockerignore excludes Git, node_modules, frontend/dist, .vite,
+tsbuildinfo, runtime data/media, local environment files, private keys, databases,
+logs, binaries and IDE files. It retains go.mod, go.sum, frontend source and
+lockfile, cmd and embedded migrations. The exact patterns are in /.dockerignore.
+
+The initial production frontend build also failed TypeScript checking. Fixed
+unused imports/variables, added Vite ambient declarations, used device username
+as an extension fallback, exposed browser origin through a script variable, and
+removed access to an unsupported authenticated-user name property. Strict
+checking remains enabled; package.json and the lockfile were not changed.
+
+Added docker-compose.coolify.yml for Coolify. It builds Dockerfile from context
+., exposes HTTP internally and publishes TCP/UDP 5060. Its external named-volume
+declaration is rewritten by Coolify's parser; see actual storage below.
+Standard ports_mappings in this Coolify version only accepts TCP,
+and its custom Docker option parser ignores --publish, so Compose is necessary
+for both SIP protocols without changing the proxy.
+
+## Actual Coolify configuration
+
+Project: 2a0vhfdrsslmii9lwvthmpr8
+Environment: 3q7cgyfldbfvkrg1ybfsb966
+Application: GoSIP, zgzcndvsggqprdlnm503jmpu
+Server: localhost, k1wigqmvzpvcps8cryssrncl
+Current EC2 public IP: 18.134.241.218 (the supplied 18.171.181.41 timed out)
+Coolify: 4.3.23; Docker: 29.8.0
 
 | Setting | Value |
 | --- | --- |
-| Source | Git repository https://github.com/btafoya/gosip |
-| Branch | main, with the local fixes made available in the deployed source |
-| Build pack | Dockerfile from Git |
-| Base directory / build context | / (repository root) |
-| Dockerfile location | /Dockerfile |
-| Build stage | final stage; no builder-stage override |
-| HTTP internal port | 8080 |
-| Domain | Existing GoSIP domain, to be discovered; do not use the Coolify dashboard domain |
-| SIP published ports | Host 5060 -> container 5060, separately for TCP and UDP |
-| Health check | HTTP GET /api/health on port 8080; image includes wget |
-| Persistent storage | Dedicated GoSIP volume mounted at /app/data |
+| Repository | https://github.com/rohitkumar-co-in/gosip |
+| Branch | main |
+| Build pack | Docker Compose from Git |
+| Base directory | / |
+| Compose location | /docker-compose.coolify.yml |
+| Docker build context | . (repository root) |
+| Dockerfile | Dockerfile at repository root |
+| Service | gosip |
+| Public URL | https://gosip.18.134.241.218.sslip.io |
+| Compose domain | https://gosip.18.134.241.218.sslip.io:8080 (target port) |
+| HTTP | Internal 8080 through existing Traefik; no host 8080 mapping |
+| SIP | Host 5060 to container 5060, TCP and UDP |
+| Health check | wget /api/health, 30s interval, 10s timeout, 3 retries, 30s start period |
+| Automatic deploy | Disabled; deploy main through Coolify after updates |
 
-SIP needs direct protocol-aware port publishing, not ordinary HTTP routing
-through Traefik. Inspect the installed Coolify version's support for UDP before
-choosing its port controls or Docker Compose. Verify port availability and AWS
-security-group/firewall rules before applying mappings. Do not invent RTP ranges:
-the inspected source exposes no configurable RTP listener range.
+The root Dockerfile can still be built independently. Original Compose files
+remain unchanged. The failed original Coolify resource was retained.
 
-## Runtime environment and storage
+## Environment and persistent storage
 
-Set GOSIP_DATA_DIR=/app/data, GOSIP_HTTP_PORT=8080 and GOSIP_SIP_PORT=5060.
-Set GOSIP_CORS_ORIGINS to the actual public application origin. TZ can follow
-the user's preference. Optional Twilio credentials are loaded from environment
-or configured through the setup UI and persisted in SQLite.
+Configured runtime values:
 
-Important discrepancy: GOSIP_DB_PATH and GOSIP_EXTERNAL_IP appear in deployment
-examples but are not read by the current application code. DBPath() derives
-/app/data/gosip.db from GOSIP_DATA_DIR. TLS/SRTP settings are loaded by config,
-but main.go does not pass them into the SIP server, so enabling those environment
-variables alone does not activate encrypted listeners. No TLS/SRTP functionality
-has been claimed as working.
+GOSIP_DATA_DIR=/app/data
+GOSIP_HTTP_PORT=8080
+GOSIP_SIP_PORT=5060
+GOSIP_CORS_ORIGINS=https://gosip.18.134.241.218.sslip.io
+GOSIP_VOLUME_NAME=zgzcndvsggqprdlnm503jmpu-gosip-data
 
-The persistent volume must be writable by UID/GID 1000. It includes gosip.db,
-recordings, voicemails, backups, certs and moh. A fresh named volume normally
-inherits the image directory contents/ownership; inspect actual ownership.
-Do not replace or reinitialize any existing data volume.
+Compose defaults TZ to America/New_York. Twilio credentials and administrator
+setup are completed in the web setup wizard; no credentials were committed.
 
-## Validation and remaining work
+The active Compose production volume is zgzcndvsggqprdlnm503jmpu_gosip-data
+(underscore), mounted at /app/data. Coolify's parser rewrites the supplied
+external-volume reference and creates this deterministic application volume.
+The initial Dockerfile deployment volume zgzcndvsggqprdlnm503jmpu-gosip-data
+(hyphen) remains intact. Both databases were inspected: zero users/devices,
+messages, DIDs and trunks. No existing databases or volumes were deleted.
+Do not assume the external-volume environment variable controls the active
+mount; inspect the generated Compose and actual Docker mounts before changes.
 
-Commands completed locally:
+GOSIP_DB_PATH and GOSIP_EXTERNAL_IP occur in upstream examples but are not read
+by this application. The actual database path derives from GOSIP_DATA_DIR.
+TLS/SRTP configuration is loaded but not passed to the SIP server by main.go;
+setting those environment variables alone does not activate encrypted listeners.
+No RTP port range was invented; the inspected source exposes no configurable
+RTP listener range. End-to-end Twilio calls, audio and encrypted SIP have not
+been verified and require separate functional validation after setup.
 
-```powershell
-git clone https://github.com/btafoya/gosip .
-# From frontend:
-npx.cmd --yes pnpm@10.11.0 install --frozen-lockfile
-npx.cmd --yes pnpm@10.11.0 build
-# From repository root:
-git diff --check
-```
+## Commands and validation
 
-Frozen dependency install passed without changing the lockfile. Production
-frontend type checking and Vite build passed after the fixes. Docker and Go are
-not installed in the local shell; no full image/backend build has been performed.
-The PEM file exists, but two SSH attempts to ubuntu@18.171.181.41:22 timed out.
-https://app.leadomi.com is reachable and redirects unauthenticated requests to login.
+Local:
 
-Once server access is restored, inspect Coolify's actual source/config and logs,
-then build from the patched repository root:
+    git clone https://github.com/btafoya/gosip .
+    cd frontend
+    npx.cmd --yes pnpm@10.11.0 install --frozen-lockfile
+    npx.cmd --yes pnpm@10.11.0 build
+    git diff --check
+    git push -u origin main
 
-```sh
-docker build --progress=plain -t gosip-test .
-```
+Server (SSH ubuntu@18.134.241.218, existing PEM; sudo for Docker):
 
-Use a dedicated temporary test container and volume; verify startup migrations,
-SQLite integrity, HTTP/frontend assets, actual TCP/UDP SIP responses, volume
-writability and persistence across container recreation. /api/health itself does
-not query SQLite or confirm that SIP sockets bound, so it is insufficient alone.
-Then apply the derived Coolify settings, deploy and verify the public application.
-Monitor memory while retaining the existing 2GiB swap and all unrelated services.
+    cd /home/ubuntu/gosip-deploy-20261005
+    sudo docker build --progress=plain -t gosip-tested:20261005 .
+    python3 scripts/deployment-smoke.py --http http://127.0.0.1:18080 --sip-port 15060
+    sudo docker exec gosip-smoke-20261005 sqlite3 /app/data/gosip.db 'PRAGMA integrity_check; SELECT COUNT(*) FROM schema_migrations;'
 
-## Server validation update
+The frozen frontend install/build passed. The manual full Docker build passed;
+Go compilation took about 96 seconds. A dedicated test container passed HTTP
+health, frontend HTML and assets, TCP/UDP SIP OPTIONS (200 OK), SQLite integrity,
+all nine migrations and UID/GID 1000 verification. Database and marker persisted
+across container recreation with the same test volume. Test containers are now
+stopped; their volume and source/build logs remain available.
 
-The current EC2 address is 18.134.241.218; SSH with the existing PEM works there.
-It has 3.7GiB RAM and 2GiB swap. The full patched Docker build passed from
-/home/ubuntu/gosip-deploy-20261005, producing gosip-tested:20261005. The Go
-compilation stage took approximately 96 seconds with concurrency limited to one.
+Current server has 3.7GiB RAM and 2GiB persistent swap. Builds completed with
+available memory; swap was retained. Coolify, Traefik, n8n and their databases
+remained running and healthy. No destructive cleanup or infrastructure reinstall
+was performed.
 
-A dedicated test container passed HTTP health, frontend HTML and asset requests,
-SIP OPTIONS over TCP and UDP, SQLite integrity_check, all nine migrations, and
-UID/GID 1000 verification. Data and a marker survived container recreation with
-the same dedicated test volume. Production Coolify deployment remains pending.
+## Final verification
 
-Coolify API inspection confirms the original application
-gq2rsvuy5pxcyeg8veyrvmp3 uses an inline Dockerfile, no repository checkout,
-and git_repository=coollabsio/coolify. This explains the tiny build context and
-missing GoSIP source files. Its root base directory alone cannot fix that mode.
+Compose deployment aye5zrntay4pysnzw9w4krv2 finished successfully at
+2026-10-05 23:50:45 IST, using commit 961b52a2b05f6283f2a26496d84c9bbea6b91ac6.
+Container gosip-zgzcndvsggqprdlnm503jmpu-181837172653 is healthy and explicitly
+publishes both TCP and UDP 5060. Public HTTPS health, HTML and frontend assets
+passed. Server-local TCP/UDP OPTIONS passed; an external UDP OPTIONS probe from
+Windows also received SIP/2.0 200 OK. Active SQLite integrity and nine migrations
+passed. Setup is incomplete. Twilio calls/SMS are not configured or validated.
 
-The maintained repository will be https://github.com/rohitkumar-co-in/gosip,
-branch main. Existing Coolify/n8n services, databases and volumes remain intact.
+## Existing-installation inspection requested after deployment
+
+Deployment changes were paused on the user's new request to inspect the existing
+business telephony installation. Active database contains zero users, devices,
+DIDs, trunks, routes, registrations and messages. No TWILIO_ACCOUNT_SID or
+TWILIO_AUTH_TOKEN environment variables are set; corresponding database config
+keys are absent. The other preserved production volume is also unconfigured.
+This does not match the user's description of multiple existing SIP users;
+confirm the authoritative installation URL/server before modifying data/config.
+
+Source blockers:
+- pkg/sip/handlers.go returns 501 for authenticated outbound INVITEs.
+- Inbound SIP ring routes send 302 redirects to registered contacts, rather than
+  bridging SIP dialogs/media; NAT and bidirectional audio are not established.
+- HTTP inbound ring TwiML targets device usernames at sip.gosip.local.
+- SIPTrunkHandler exists but is not registered in the HTTP router.
+- No active RTP listener/relay port allocation was found in the current startup.
+- Web SMS APIs, Twilio REST sending, inbound SMS/status webhooks and SQLite
+  message history exist, but there are no configured credentials or DIDs.
+- Webhook signature validation reads the database twilio_auth_token key, so
+  environment-only credentials are insufficient for its current implementation.
+
+No application/container/database configuration was changed during this
+inspection. Real calls, registration with user credentials, DTMF, audio and real
+SMS tests remain pending identification/configuration of the correct installation.
+
+## Credential-storage change
+
+On the user's request, GoSIP now supports Twilio credentials supplied through
+Coolify runtime variables without storing them in SQLite. The Twilio client,
+setup wizard and webhook validation all use the same configured credentials.
+Runtime variables take priority and cannot be overwritten through the web UI.
+The wizard detects preconfigured credentials and skips re-entry.
+
+Without runtime variables, UI credentials are saved atomically to /app/data/.env
+with permissions 0600, and reloaded on restart. Existing Twilio database rows
+are migrated only after their replacement credentials are available; a failed
+file write preserves the old rows. No unrelated configuration secrets moved.
+See TWILIO_CREDENTIALS.md for precedence, backup and security details.
+
+The production SQLite database was backed up consistently to
+/app/data/backups/pre-twilio-env-20261006.db with mode 0600; integrity_check passed.
+Go tests passed for internal/config, internal/db, internal/api and internal/twilio,
+including credential persistence, failed migration retention, token rotation,
+webhook signatures and runtime credentials avoiding both SQLite and file copies.
+Frontend production type checking and build also passed.

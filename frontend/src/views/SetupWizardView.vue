@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { setupApi, type SetupRequest } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
@@ -10,6 +10,16 @@ const authStore = useAuthStore()
 const step = ref(1)
 const loading = ref(false)
 const error = ref<string | null>(null)
+const twilioConfigured = ref(false)
+
+onMounted(async () => {
+  try {
+    const status = await setupApi.getStatus()
+    twilioConfigured.value = status.twilio_configured ?? false
+  } catch {
+    error.value = 'Unable to check existing Twilio configuration'
+  }
+})
 
 const form = ref<SetupRequest>({
   twilio_account_sid: '',
@@ -28,7 +38,7 @@ const confirmPassword = ref('')
 
 function nextStep() {
   if (step.value === 1) {
-    if (!form.value.twilio_account_sid || !form.value.twilio_auth_token) {
+    if (!twilioConfigured.value && (!form.value.twilio_account_sid || !form.value.twilio_auth_token)) {
       error.value = 'Twilio credentials are required'
       return
     }
@@ -109,9 +119,10 @@ async function handleSubmit() {
         <!-- Step 1: Twilio Credentials -->
         <div v-if="step === 1" class="space-y-4">
           <h3 class="text-lg font-medium text-gray-900 dark:text-white">Twilio Configuration</h3>
-          <p class="text-sm text-gray-500">Enter your Twilio account credentials</p>
+          <p v-if="twilioConfigured" class="text-sm text-gray-500">Twilio credentials are already configured. Continue to create your administrator account.</p>
+          <p v-else class="text-sm text-gray-500">Enter your Twilio account credentials</p>
 
-          <div>
+          <div v-if="!twilioConfigured">
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Account SID
             </label>
@@ -124,7 +135,7 @@ async function handleSubmit() {
             />
           </div>
 
-          <div>
+          <div v-if="!twilioConfigured">
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Auth Token
             </label>

@@ -162,7 +162,7 @@ func (h *WebhookHandler) VoicemailRecording(w http.ResponseWriter, r *http.Reque
 	if h.deps.Twilio != nil {
 		transcriptionEnabled, _ := h.deps.DB.Config.Get(r.Context(), "transcription_enabled")
 		if transcriptionEnabled == "true" {
-				safeGo(func() { h.deps.Twilio.RequestTranscription(recordingSID, voicemail.ID) })
+			safeGo(func() { h.deps.Twilio.RequestTranscription(recordingSID, voicemail.ID) })
 		}
 	}
 
@@ -319,8 +319,8 @@ func (h *WebhookHandler) SMSStatus(w http.ResponseWriter, r *http.Request) {
 // Helper methods
 
 func (h *WebhookHandler) validateSignature(r *http.Request) bool {
-	authToken, err := h.deps.DB.Config.Get(r.Context(), "twilio_auth_token")
-	if err != nil || authToken == "" {
+	_, authToken := h.deps.Config.TwilioCredentials()
+	if authToken == "" {
 		return false
 	}
 
@@ -425,8 +425,8 @@ func (h *WebhookHandler) evaluateCondition(route *models.Route, callerID string)
 		}
 	case "time":
 		var data struct {
-			StartHour int `json:"start_hour"`
-			EndHour   int `json:"end_hour"`
+			StartHour int   `json:"start_hour"`
+			EndHour   int   `json:"end_hour"`
 			Days      []int `json:"days"`
 		}
 		if err := json.Unmarshal(route.ConditionData, &data); err == nil {

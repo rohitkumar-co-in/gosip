@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"sync"
 )
 
 // TLSConfig holds TLS-specific configuration
@@ -70,7 +71,8 @@ type Config struct {
 	DataDir   string
 	SIPDomain string // SIP domain for registrations (e.g., "sip.example.com")
 
-	// Twilio credentials (loaded from database after setup)
+	// Twilio credentials (loaded from the process environment or persistent .env).
+	twilioMu         sync.RWMutex
 	TwilioAccountSID string
 	TwilioAuthToken  string
 

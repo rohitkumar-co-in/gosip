@@ -49,6 +49,14 @@ func main() {
 		slog.Error("Failed to run database migrations", "error", err)
 		os.Exit(1)
 	}
+	if err := cfg.LoadTwilioEnv(); err != nil {
+		slog.Error("Failed to load Twilio environment file")
+		os.Exit(1)
+	}
+	if err := database.Config.MigrateTwilioEnv(cfg); err != nil {
+		slog.Error("Failed to migrate Twilio credentials to environment file")
+		os.Exit(1)
+	}
 
 	// Create context with cancellation for graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
@@ -74,14 +82,6 @@ func main() {
 
 	// Initialize Twilio client
 	twilioClient := twilio.NewClient(cfg)
-
-	// Load Twilio credentials from database if they exist
-	if accountSID, err := database.Config.Get(ctx, "twilio_account_sid"); err == nil && accountSID != "" {
-		if authToken, err := database.Config.Get(ctx, "twilio_auth_token"); err == nil && authToken != "" {
-			twilioClient.UpdateCredentials(accountSID, authToken)
-			slog.Info("Twilio credentials loaded from database")
-		}
-	}
 
 	twilioClient.Start(ctx)
 	defer twilioClient.Stop()
@@ -133,4 +133,3 @@ func main() {
 
 	slog.Info("GoSIP shutdown complete")
 }
-

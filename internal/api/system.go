@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"net/http"
 	"runtime"
@@ -10,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/btafoya/gosip/internal/config"
 	"github.com/btafoya/gosip/internal/models"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -69,9 +71,10 @@ func (h *SystemHandler) GetConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Build response with actual values (this endpoint is admin-only)
+	accountSID, authToken := h.deps.Config.TwilioCredentials()
 	response := ConfigResponse{
-		TwilioAccountSID:     cfg["twilio_account_sid"],
-		TwilioConfigured:     cfg["twilio_account_sid"] != "",
+		TwilioAccountSID:     accountSID,
+		TwilioConfigured:     accountSID != "" && authToken != "",
 		SMTPHost:             cfg["smtp_host"],
 		SMTPPort:             smtpPort,
 		SMTPUser:             cfg["smtp_user"],
@@ -119,14 +122,18 @@ func (h *SystemHandler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Update Twilio settings (only if provided)
-	if req.TwilioAccountSID != "" {
-		h.deps.DB.Config.Set(ctx, "twilio_account_sid", req.TwilioAccountSID)
-	}
-	if req.TwilioAuthToken != "" {
-		h.deps.DB.Config.Set(ctx, "twilio_auth_token", req.TwilioAuthToken)
-		// Update Twilio client with new credentials
-		if h.deps.Twilio != nil && req.TwilioAccountSID != "" {
-			h.deps.Twilio.UpdateCredentials(req.TwilioAccountSID, req.TwilioAuthToken)
+	if req.TwilioAccountSID != "" || req.TwilioAuthToken != "" {
+		if err := h.deps.Config.SaveTwilioEnv(req.TwilioAccountSID, req.TwilioAuthToken); err != nil {
+			if stderrors.Is(err, config.ErrTwilioRuntimeManaged) {
+				WriteError(w, http.StatusBadRequest, ErrCodeBadRequest, "Twilio credentials are managed by runtime environment variables; update your deployment settings", nil)
+				return
+			}
+			WriteError(w, http.StatusInternalServerError, ErrCodeInternal, "Unable to save Twilio credentials", nil)
+			return
+		}
+		if h.deps.Twilio != nil {
+			sid, token := h.deps.Config.TwilioCredentials()
+			h.deps.Twilio.UpdateCredentials(sid, token)
 		}
 	}
 
@@ -165,16 +172,16 @@ func (h *SystemHandler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 
 // SetupWizardRequest represents setup wizard data
 type SetupWizardRequest struct {
-	TwilioAccountSID  string `json:"twilio_account_sid"`
-	TwilioAuthToken   string `json:"twilio_auth_token"`
-	AdminEmail        string `json:"admin_email"`
-	AdminPassword     string `json:"admin_password"`
-	SMTPHost          string `json:"smtp_host,omitempty"`
-	SMTPPort          int    `json:"smtp_port,omitempty"`
-	SMTPUser          string `json:"smtp_user,omitempty"`
-	SMTPPassword      string `json:"smtp_password,omitempty"`
-	GotifyURL         string `json:"gotify_url,omitempty"`
-	GotifyToken       string `json:"gotify_token,omitempty"`
+	TwilioAccountSID string `json:"twilio_account_sid"`
+	TwilioAuthToken  string `json:"twilio_auth_token"`
+	AdminEmail       string `json:"admin_email"`
+	AdminPassword    string `json:"admin_password"`
+	SMTPHost         string `json:"smtp_host,omitempty"`
+	SMTPPort         int    `json:"smtp_port,omitempty"`
+	SMTPUser         string `json:"smtp_user,omitempty"`
+	SMTPPassword     string `json:"smtp_password,omitempty"`
+	GotifyURL        string `json:"gotify_url,omitempty"`
+	GotifyToken      string `json:"gotify_token,omitempty"`
 }
 
 // SetupWizard handles initial system setup
@@ -193,6 +200,9 @@ func (h *SystemHandler) SetupWizard(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate required fields
+	if req.TwilioAccountSID == "" && req.TwilioAuthToken == "" {
+		req.TwilioAccountSID, req.TwilioAuthToken = h.deps.Config.TwilioCredentials()
+	}
 	var errors []FieldError
 	if req.TwilioAccountSID == "" {
 		errors = append(errors, FieldError{Field: "twilio_account_sid", Message: "Twilio Account SID is required"})
@@ -214,9 +224,15 @@ func (h *SystemHandler) SetupWizard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Save Twilio credentials
-	h.deps.DB.Config.Set(r.Context(), "twilio_account_sid", req.TwilioAccountSID)
-	h.deps.DB.Config.Set(r.Context(), "twilio_auth_token", req.TwilioAuthToken)
+	// Keep Twilio credentials out of SQLite and database backups.
+	if err := h.deps.Config.SaveTwilioEnv(req.TwilioAccountSID, req.TwilioAuthToken); err != nil {
+		if stderrors.Is(err, config.ErrTwilioRuntimeManaged) {
+			WriteError(w, http.StatusBadRequest, ErrCodeBadRequest, "Twilio credentials are managed by runtime environment variables; update your deployment settings", nil)
+			return
+		}
+		WriteError(w, http.StatusInternalServerError, ErrCodeInternal, "Unable to save Twilio credentials", nil)
+		return
+	}
 
 	// Save SMTP settings if provided
 	if req.SMTPHost != "" {
@@ -253,16 +269,16 @@ func (h *SystemHandler) SetupWizard(w http.ResponseWriter, r *http.Request) {
 
 // StatusResponse represents system status
 type StatusResponse struct {
-	Status           string            `json:"status"`
-	Version          string            `json:"version"`
-	Uptime           string            `json:"uptime"`
-	GoVersion        string            `json:"go_version"`
-	SIPServerStatus  string            `json:"sip_server_status"`
-	TwilioStatus     string            `json:"twilio_status"`
-	DatabaseStatus   string            `json:"database_status"`
-	ActiveCalls      int               `json:"active_calls"`
+	Status            string           `json:"status"`
+	Version           string           `json:"version"`
+	Uptime            string           `json:"uptime"`
+	GoVersion         string           `json:"go_version"`
+	SIPServerStatus   string           `json:"sip_server_status"`
+	TwilioStatus      string           `json:"twilio_status"`
+	DatabaseStatus    string           `json:"database_status"`
+	ActiveCalls       int              `json:"active_calls"`
 	RegisteredDevices int              `json:"registered_devices"`
-	Stats            map[string]int64  `json:"stats"`
+	Stats             map[string]int64 `json:"stats"`
 }
 
 // GetStatus returns system health status
@@ -461,8 +477,10 @@ func (h *SystemHandler) CleanOldBackups(w http.ResponseWriter, r *http.Request) 
 // GetSetupStatus returns whether setup is completed
 func (h *SystemHandler) GetSetupStatus(w http.ResponseWriter, r *http.Request) {
 	setupCompleted, _ := h.deps.DB.Config.Get(r.Context(), "setup_completed")
+	sid, token := h.deps.Config.TwilioCredentials()
 	WriteJSON(w, http.StatusOK, map[string]bool{
-		"setup_completed": setupCompleted == "true",
+		"setup_completed":   setupCompleted == "true",
+		"twilio_configured": sid != "" && token != "",
 	})
 }
 

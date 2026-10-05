@@ -13,15 +13,15 @@ import (
 
 // Client wraps the Twilio API client with retry logic and health monitoring
 type Client struct {
-	client      *twilio.RestClient
-	accountSID  string
-	authToken   string
-	mu          sync.RWMutex
-	healthy     bool
-	lastCheck   time.Time
+	client       *twilio.RestClient
+	accountSID   string
+	authToken    string
+	mu           sync.RWMutex
+	healthy      bool
+	lastCheck    time.Time
 	failureCount int
-	queue       *MessageQueue
-	cfg         *config.Config
+	queue        *MessageQueue
+	cfg          *config.Config
 }
 
 // NewClient creates a new Twilio client
@@ -31,8 +31,8 @@ func NewClient(cfg *config.Config) *Client {
 		healthy: false,
 	}
 
-	if cfg.TwilioAccountSID != "" && cfg.TwilioAuthToken != "" {
-		c.UpdateCredentials(cfg.TwilioAccountSID, cfg.TwilioAuthToken)
+	if sid, token := cfg.TwilioCredentials(); sid != "" && token != "" {
+		c.UpdateCredentials(sid, token)
 	}
 
 	c.queue = NewMessageQueue(c)
@@ -264,12 +264,12 @@ type AvailableNumber struct {
 
 // IncomingPhoneNumber represents an owned phone number
 type IncomingPhoneNumber struct {
-	SID           string
-	PhoneNumber   string
-	FriendlyName  string
-	SMSEnabled    bool
-	VoiceEnabled  bool
-	TrunkSID      string
+	SID          string
+	PhoneNumber  string
+	FriendlyName string
+	SMSEnabled   bool
+	VoiceEnabled bool
+	TrunkSID     string
 }
 
 // ListIncomingPhoneNumbers returns phone numbers owned by the account

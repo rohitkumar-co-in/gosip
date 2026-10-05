@@ -55,7 +55,7 @@ export const authApi = {
 
 // Setup API (public endpoints)
 export const setupApi = {
-  getStatus: () => get<{ setup_completed: boolean }>('/setup/status'),
+  getStatus: () => get<{ setup_completed: boolean; twilio_configured?: boolean }>('/setup/status'),
   complete: (data: SetupRequest) => post<{ message: string }>('/setup/complete', data)
 }
 

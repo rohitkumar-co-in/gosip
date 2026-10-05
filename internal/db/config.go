@@ -6,13 +6,14 @@ import (
 	"errors"
 	"time"
 
+	"github.com/btafoya/gosip/internal/config"
 	"github.com/btafoya/gosip/internal/models"
 )
 
 var ErrConfigNotFound = errors.New("config key not found")
 
 // SECURITY: ConfigRepository stores values as plaintext in SQLite.
-// Sensitive keys (twilio_auth_token, smtp_password, gotify_token, etc.) are
+// Sensitive keys (smtp_password, gotify_token, etc.) are
 // readable by anyone with filesystem access to the DB file. Backups also
 // contain these in plaintext. Column-level AES-GCM encryption with the master
 // key is planned (claudedocs/SPEC_ADDENDUM_2026-05-07.md §10) but not yet
@@ -22,6 +23,38 @@ var ErrConfigNotFound = errors.New("config key not found")
 // ConfigRepository handles database operations for system configuration.
 type ConfigRepository struct {
 	db *sql.DB
+}
+
+// MigrateTwilioEnv moves legacy Twilio settings before removing their DB rows.
+// Existing process/file credentials take precedence over legacy values.
+func (r *ConfigRepository) MigrateTwilioEnv(cfg *config.Config) error {
+	ctx := context.Background()
+	sid, token := cfg.TwilioCredentials()
+	found := false
+	for _, key := range []string{"twilio_account_sid", "twilio_auth_token", "twilio.account_sid", "twilio.auth_token"} {
+		value, err := r.Get(ctx, key)
+		if errors.Is(err, ErrConfigNotFound) {
+			continue
+		}
+		if err != nil {
+			return err
+		}
+		found = true
+		if (key == "twilio_account_sid" || key == "twilio.account_sid") && sid == "" {
+			sid = value
+		}
+		if (key == "twilio_auth_token" || key == "twilio.auth_token") && token == "" {
+			token = value
+		}
+	}
+	if !found {
+		return nil
+	}
+	if err := cfg.SaveTwilioEnv(sid, token); err != nil {
+		return err // Preserve all legacy rows if durable file storage fails.
+	}
+	_, err := r.db.ExecContext(ctx, `DELETE FROM config WHERE key IN ('twilio_account_sid', 'twilio_auth_token', 'twilio.account_sid', 'twilio.auth_token')`)
+	return err
 }
 
 // NewConfigRepository creates a new ConfigRepository
@@ -152,17 +185,17 @@ const (
 	ConfigKeySpamScoreThreshold = "spam_filter.threshold"
 
 	// TLS configuration keys
-	ConfigKeyTLSEnabled    = "tls.enabled"
-	ConfigKeyTLSPort       = "tls.port"
-	ConfigKeyTLSWSSPort    = "tls.wss_port"
-	ConfigKeyTLSCertMode   = "tls.cert_mode"
-	ConfigKeyTLSCertFile   = "tls.cert_file"
-	ConfigKeyTLSKeyFile    = "tls.key_file"
-	ConfigKeyTLSCAFile     = "tls.ca_file"
-	ConfigKeyTLSMinVersion = "tls.min_version"
-	ConfigKeyTLSClientAuth = "tls.client_auth"
-	ConfigKeyTLSCertExpiry = "tls.cert_expiry"
-	ConfigKeyTLSCertIssuer = "tls.cert_issuer"
+	ConfigKeyTLSEnabled     = "tls.enabled"
+	ConfigKeyTLSPort        = "tls.port"
+	ConfigKeyTLSWSSPort     = "tls.wss_port"
+	ConfigKeyTLSCertMode    = "tls.cert_mode"
+	ConfigKeyTLSCertFile    = "tls.cert_file"
+	ConfigKeyTLSKeyFile     = "tls.key_file"
+	ConfigKeyTLSCAFile      = "tls.ca_file"
+	ConfigKeyTLSMinVersion  = "tls.min_version"
+	ConfigKeyTLSClientAuth  = "tls.client_auth"
+	ConfigKeyTLSCertExpiry  = "tls.cert_expiry"
+	ConfigKeyTLSCertIssuer  = "tls.cert_issuer"
 	ConfigKeyTLSLastRenewal = "tls.last_renewal"
 	ConfigKeyTLSNextRenewal = "tls.next_renewal"
 
