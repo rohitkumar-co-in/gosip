@@ -4,18 +4,22 @@ import { authApi, setupApi, type User } from '@/api/auth'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
-  const token = ref<string | null>(null)
   const initialized = ref(false)
   const setupCompleted = ref(true)
   const loading = ref(false)
   const error = ref<string | null>(null)
+  let authCheck: Promise<void> | null = null
 
   const isAuthenticated = computed(() => !!user.value)
   const isAdmin = computed(() => user.value?.role === 'admin')
 
-  async function checkAuth() {
-    if (initialized.value) return
+  function checkAuth(): Promise<void> {
+    if (initialized.value) return Promise.resolve()
+    if (!authCheck) authCheck = restoreSession()
+    return authCheck
+  }
 
+  async function restoreSession() {
     try {
       // First check if setup is completed (public endpoint)
       const status = await setupApi.getStatus()
@@ -26,20 +30,14 @@ export const useAuthStore = defineStore('auth', () => {
         return
       }
 
-      // Then check if user is authenticated
-      if (token.value) {
-        try {
-          const currentUser = await authApi.getCurrentUser()
-          user.value = currentUser
-        } catch {
-          // Token invalid or expired
-          user.value = null
-          token.value = null
-        }
+      // The HttpOnly session cookie survives refresh and is sent by the API client.
+      try {
+        user.value = await authApi.getCurrentUser()
+      } catch {
+        user.value = null
       }
     } catch {
-      // Setup status check failed - assume setup not completed
-      setupCompleted.value = false
+      error.value = 'Unable to check server status. Please try again.'
     } finally {
       initialized.value = true
     }
@@ -52,7 +50,6 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await authApi.login({ email, password })
       user.value = response.user
-      token.value = response.token
       return true
     } catch (err: unknown) {
       const apiError = err as { response?: { data?: { error?: { message?: string } } } }
@@ -68,7 +65,6 @@ export const useAuthStore = defineStore('auth', () => {
       await authApi.logout()
     } finally {
       user.value = null
-      token.value = null
     }
   }
 
@@ -94,7 +90,6 @@ export const useAuthStore = defineStore('auth', () => {
 
   return {
     user,
-    token,
     initialized,
     setupCompleted,
     loading,

@@ -14,7 +14,9 @@ const apiClient: AxiosInstance = axios.create({
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    // These callers handle unauthenticated sessions and failed logins themselves.
+    const handledByCaller = ['/me', '/auth/login'].includes(error.config?.url)
+    if (error.response?.status === 401 && !handledByCaller) {
       window.location.href = '/login'
     }
     return Promise.reject(error)
