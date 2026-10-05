@@ -406,6 +406,9 @@ func (h *WebhookHandler) buildValidationURL(r *http.Request) string {
 }
 
 func (h *WebhookHandler) respondTwiML(w http.ResponseWriter, twiml string) {
+	if twiml == "" {
+		twiml = "<Response/>"
+	}
 	w.Header().Set("Content-Type", "application/xml")
 	w.WriteHeader(http.StatusOK)
 	io.WriteString(w, `<?xml version="1.0" encoding="UTF-8"?>`)

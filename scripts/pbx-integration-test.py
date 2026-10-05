@@ -108,7 +108,8 @@ try:
         time.sleep(.2)
     assert received==[{'username':username,'to_number':'+441111111111','body':body}],received
     print('PASS SIP MESSAGE → authenticated HTTP SMS bridge; Unicode/newlines intact')
-    db.execute("INSERT INTO messages VALUES(1,1,'inbound','+442222222222',?, '[]','received')",('Incoming test\n✓',));db.commit()
+    # Real GoSIP SMS rows encode a nil media URL slice as JSON null.
+    db.execute("INSERT INTO messages VALUES(1,1,'inbound','+442222222222',?, 'null','received')",('Incoming test\n✓',));db.commit()
     while True:
         head,content=receive()
         response(head)

@@ -63,6 +63,10 @@ Use POST callbacks on the canonical GoSIP URL:
 - SIP domain Voice URL: `/api/webhooks/voice/outgoing`.
 
 Clear stale Voice/SMS Application SID overrides when using URL callbacks.
+If the number belongs to a Messaging Service, select **Defer to sender's
+webhook** (`UseInboundWebhookOnNumber=true`) for that service. Its incoming
+webhook otherwise overrides the number's SMS URL. For a shared service, review
+the effect on every sender before changing the service setting.
 Enable Secure Media and map the outbound credential list to Calls. Outbound
 voice requires signed requests from the configured account, a known username
 and international destinations. Twilio geographic dialing permissions apply.
@@ -87,6 +91,13 @@ Manually test incoming/outgoing calls, two-way audio, DTMF, incoming/outgoing SM
 reply to a received message, and operation with the screen locked. Registration
 alone does not prove audio. GoSIP's original SIP call-control API is not connected
 to Asterisk; native softphone call controls remain available.
+
+For Linphone's **incompatible media parameters** error, check **Media encryption**
+in Settings (under Advanced in some versions): select **SRTP**, and enable
+**PCMU/PCMA (G.711)** in Audio codecs. This deployment requires SDES SRTP; plain
+RTP, ZRTP and DTLS offers do not match the configured phone endpoint. An Asterisk
+`Couldn't negotiate stream` error on the phone endpoint means the call failed
+before reaching the Twilio outbound trunk.
 
 References: [Linphone features](https://www.linphone.org/en/features/),
 [Twilio secure media](https://www.twilio.com/docs/voice/api/secure-media),

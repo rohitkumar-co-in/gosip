@@ -328,7 +328,8 @@ def enqueue(queue):
         cursor = int(queue.execute("SELECT value FROM meta WHERE key='cursor'").fetchone()[0])
         for msg in conn.execute("SELECT id,did_id,from_number,body,media_urls FROM messages WHERE direction='inbound' AND id>? ORDER BY id LIMIT 100", (cursor,)):
             body = msg["body"] or ""
-            for url in json.loads(msg["media_urls"] or "[]"):
+            # Go marshals a nil media slice as JSON null for ordinary SMS.
+            for url in json.loads(msg["media_urls"] or "[]") or []:
                 body += "\n" + url
             if NUMBER.fullmatch(msg["from_number"]):
                 for username in targets(conn, msg["did_id"]):

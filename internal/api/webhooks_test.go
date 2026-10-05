@@ -1,8 +1,25 @@
 package api
 
 import (
+	"encoding/xml"
+	"net/http/httptest"
 	"testing"
 )
+
+func TestWebhookEmptyTwiMLIsValidResponse(t *testing.T) {
+	response := httptest.NewRecorder()
+	(&WebhookHandler{}).respondTwiML(response, "")
+	var document struct {
+		XMLName  xml.Name `xml:"Response"`
+		Messages []string `xml:"Message"`
+	}
+	if err := xml.Unmarshal(response.Body.Bytes(), &document); err != nil {
+		t.Fatalf("Twilio must receive a complete XML response: %v", err)
+	}
+	if response.Code != 200 || len(document.Messages) != 0 {
+		t.Fatal("An acknowledged incoming SMS must not generate a reply")
+	}
+}
 
 func TestEscapeXML(t *testing.T) {
 	tests := []struct {
