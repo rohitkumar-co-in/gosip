@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -288,7 +289,11 @@ func (h *MessageHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 // GetConversation returns messages grouped by conversation (remote number)
 func (h *MessageHandler) GetConversation(w http.ResponseWriter, r *http.Request) {
-	remoteNumber := chi.URLParam(r, "number")
+	remoteNumber, decodeErr := url.PathUnescape(chi.URLParam(r, "number"))
+	if decodeErr != nil {
+		WriteValidationError(w, "Invalid remote number", nil)
+		return
+	}
 	if remoteNumber == "" {
 		WriteValidationError(w, "Remote number is required", nil)
 		return
@@ -754,7 +759,11 @@ func (h *MessageHandler) GetUnreadCount(w http.ResponseWriter, r *http.Request) 
 
 // MarkConversationAsRead marks all messages in a conversation as read
 func (h *MessageHandler) MarkConversationAsRead(w http.ResponseWriter, r *http.Request) {
-	remoteNumber := chi.URLParam(r, "number")
+	remoteNumber, decodeErr := url.PathUnescape(chi.URLParam(r, "number"))
+	if decodeErr != nil {
+		WriteValidationError(w, "Invalid remote number", nil)
+		return
+	}
 	if remoteNumber == "" {
 		WriteValidationError(w, "Remote number is required", nil)
 		return

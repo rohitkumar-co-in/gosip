@@ -8,8 +8,28 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/rohitkumar-co-in/gosip/internal/models"
 )
+
+func TestConversationEncodedInternationalNumber(t *testing.T) {
+	setup := setupTestAPI(t)
+	handler := NewMessageHandler(&Dependencies{DB: setup.DB})
+	did := createTestDID(t, setup.DB, "+15551234567")
+	createTestMessage(t, setup.DB, did.ID, "inbound", "+15559876543", "Hello")
+	router := chi.NewRouter()
+	router.Get("/api/messages/conversation/{number}", handler.GetConversation)
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/api/messages/conversation/%2B15559876543?did_id=1", nil))
+	assertStatus(t, rr, http.StatusOK)
+	var response struct {
+		Data []*MessageResponse `json:"data"`
+	}
+	decodeResponse(t, rr, &response)
+	if len(response.Data) != 1 {
+		t.Fatalf("Encoded international conversation returned %d messages", len(response.Data))
+	}
+}
 
 func TestMessageHandler_List(t *testing.T) {
 	setup := setupTestAPI(t)

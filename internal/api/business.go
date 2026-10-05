@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -29,6 +30,13 @@ import (
 var businessMu sync.Mutex
 var businessUsername = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9_-]{2,63}$`)
 var resourceSID = regexp.MustCompile(`^[A-Z]{2}[a-fA-F0-9]{32}$`)
+
+func phoneServer(value string) string {
+	if host, _, err := net.SplitHostPort(value); err == nil {
+		return host
+	}
+	return value
+}
 
 func validBusinessUsername(username string) bool {
 	if !businessUsername.MatchString(username) {
@@ -179,7 +187,7 @@ func (h *BusinessHandler) List(w http.ResponseWriter, r *http.Request) {
 		result = append(result, map[string]interface{}{"id": d.ID, "name": d.Name, "username": d.Username, "number": number, "state": state, "enabled": enabled, "online": enabled && online[d.ID]})
 	}
 	w.Header().Set("Cache-Control", "no-store")
-	WriteJSON(w, 200, map[string]interface{}{"data": result, "server": h.deps.Config.PBXSIPDomain, "proxy": "sip:" + h.deps.Config.PBXSIPDomain + ":5061;transport=tls"})
+	WriteJSON(w, 200, map[string]interface{}{"data": result, "server": phoneServer(h.deps.Config.PBXSIPDomain), "proxy": "sip:" + phoneServer(h.deps.Config.PBXSIPDomain) + ":5061;transport=tls"})
 }
 func (h *BusinessHandler) credentialList(ctx context.Context) (string, error) {
 	domainSID, err := h.deps.DB.Config.Get(ctx, "pbx_twilio_domain_sid")
@@ -327,7 +335,7 @@ func (h *BusinessHandler) Provision(w http.ResponseWriter, r *http.Request) {
 		}
 		req.Username = device.Username
 	} else if !validBusinessUsername(req.Username) {
-		WriteValidationError(w, "Username must start with a letter and contain 3–64 letters, digits, underscores or hyphens", nil)
+		WriteValidationError(w, "Username must start with a letter and contain 3â€“64 letters, digits, underscores or hyphens", nil)
 		return
 	}
 	var assigned int64
@@ -364,7 +372,7 @@ func (h *BusinessHandler) Provision(w http.ResponseWriter, r *http.Request) {
 		h.deps.DB.Conn().QueryRowContext(r.Context(), "SELECT number,state,enabled FROM sip_accounts WHERE device_id=?", device.ID).Scan(&oldNumber, &oldState, &oldEnabled)
 	}
 	if req.Password != "" && !validPhonePassword(req.Password) {
-		WriteValidationError(w, "Phone password must be 12–72 printable ASCII characters without spaces", nil)
+		WriteValidationError(w, "Phone password must be 12â€“72 printable ASCII characters without spaces", nil)
 		return
 	}
 	if device != nil && oldNumber == req.Number && oldState == "ready" && oldEnabled {
@@ -386,7 +394,7 @@ func (h *BusinessHandler) Provision(w http.ResponseWriter, r *http.Request) {
 		}
 		h.audit(r.Context(), getUserIDFromContext(r.Context()), "edit_user", device.Username, "connections_preserved")
 		w.Header().Set("Cache-Control", "no-store")
-		WriteJSON(w, 200, map[string]interface{}{"id": device.ID, "username": device.Username, "number": req.Number, "state": "ready", "password": phonePassword, "proxy": "sip:" + h.deps.Config.PBXSIPDomain + ":5061;transport=tls", "server": h.deps.Config.PBXSIPDomain})
+		WriteJSON(w, 200, map[string]interface{}{"id": device.ID, "username": device.Username, "number": req.Number, "state": "ready", "password": phonePassword, "proxy": "sip:" + phoneServer(h.deps.Config.PBXSIPDomain) + ":5061;transport=tls", "server": phoneServer(h.deps.Config.PBXSIPDomain)})
 		return
 	}
 	// Review is read-only and must precede every external or local mutation.
@@ -491,7 +499,7 @@ func (h *BusinessHandler) Provision(w http.ResponseWriter, r *http.Request) {
 	}
 	h.audit(r.Context(), getUserIDFromContext(r.Context()), "provision", device.Username, "ready")
 	w.Header().Set("Cache-Control", "no-store")
-	WriteJSON(w, 200, map[string]interface{}{"id": device.ID, "username": device.Username, "number": req.Number, "state": "ready", "password": phonePassword, "proxy": "sip:" + h.deps.Config.PBXSIPDomain + ":5061;transport=tls", "server": h.deps.Config.PBXSIPDomain})
+	WriteJSON(w, 200, map[string]interface{}{"id": device.ID, "username": device.Username, "number": req.Number, "state": "ready", "password": phonePassword, "proxy": "sip:" + phoneServer(h.deps.Config.PBXSIPDomain) + ":5061;transport=tls", "server": phoneServer(h.deps.Config.PBXSIPDomain)})
 }
 func (h *BusinessHandler) assign(ctx context.Context, d *models.Device, name, number, numberSID, credential, phonePassword string) error {
 	tx, err := h.deps.DB.Conn().BeginTx(ctx, nil)
