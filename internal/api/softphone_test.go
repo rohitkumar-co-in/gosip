@@ -50,6 +50,12 @@ func TestSoftphoneOutboundRouting(t *testing.T) {
 		accepted       bool
 	}{
 		{"valid", "sip:mobile@test.sip.dublin.twilio.com", "sip:+441234567890@test.sip.dublin.twilio.com", true},
+		{"PBX TLS destination", "sip:mobile@test.sip.twilio.com", "sip:+441234567890@test.sip.twilio.com:5061;transport=tls;secure=true", true},
+		{"edge host with port", "sip:mobile@test.sip.dublin.twilio.com:5061", "sip:+441234567890@test.sip.dublin.twilio.com:5061;transport=tls", true},
+		{"escaped plus", "sip:mobile@test.sip.twilio.com", "sip:%2B441234567890@test.sip.twilio.com:5061", true},
+		{"invalid port", "sip:mobile@test.sip.twilio.com", "sip:+441234567890@test.sip.twilio.com:invalid", false},
+		{"port out of range", "sip:mobile@test.sip.twilio.com", "sip:+441234567890@test.sip.twilio.com:65536", false},
+		{"foreign host with port", "sip:mobile@test.sip.twilio.com", "sip:+441234567890@evil.test:5061", false},
 		{"unknown device", "sip:stranger@test.sip.twilio.com", "sip:+441234567890@test.sip.twilio.com", false},
 		{"foreign host", "sip:mobile@evil.test", "sip:+441234567890@test.sip.twilio.com", false},
 		{"foreign destination", "sip:mobile@test.sip.twilio.com", "sip:+441234567890@evil.test", false},

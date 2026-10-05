@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -25,6 +26,13 @@ func sipEndpoint(value, domain string) (string, bool) {
 		return "", false
 	}
 	host := strings.ToLower(parts[1])
+	if hostname, port, found := strings.Cut(host, ":"); found {
+		n, err := strconv.Atoi(port)
+		if err != nil || n < 1 || n > 65535 {
+			return "", false
+		}
+		host = hostname
+	}
 	domain = strings.ToLower(domain)
 	prefix := strings.TrimSuffix(domain, ".sip.twilio.com")
 	if host != domain {
@@ -36,7 +44,8 @@ func sipEndpoint(value, domain string) (string, bool) {
 			return "", false
 		}
 	}
-	return parts[0], parts[0] != ""
+	username, err := url.PathUnescape(parts[0])
+	return username, err == nil && username != "" && !strings.ContainsAny(username, "@;:/? \t\r\n")
 }
 
 // VoiceOutgoing bridges an authenticated Twilio SIP endpoint to the PSTN.
