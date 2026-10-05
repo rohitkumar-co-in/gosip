@@ -89,3 +89,30 @@ func TestSetupUsesRuntimeCredentialsWithoutCopyingSecrets(t *testing.T) {
 		t.Fatal("setup copied runtime secret to SQLite")
 	}
 }
+
+func TestSetupWithoutTwilioCreatesAdminWithoutCredentialFile(t *testing.T) {
+	t.Setenv("TWILIO_ACCOUNT_SID", "")
+	t.Setenv("TWILIO_AUTH_TOKEN", "")
+	setup := setupTestAPI(t)
+	cfg := &config.Config{DataDir: t.TempDir()}
+	handler := NewSystemHandler(&Dependencies{DB: setup.DB, Config: cfg})
+	body := `{"admin_email":"no-twilio@example.com","admin_password":"test-password-123"}`
+	rr := httptest.NewRecorder()
+	handler.SetupWizard(rr, httptest.NewRequest(http.MethodPost, "/api/setup/complete", strings.NewReader(body)))
+	assertStatus(t, rr, http.StatusOK)
+	completed, err := setup.DB.Config.Get(context.Background(), "setup_completed")
+	if err != nil || completed != "true" {
+		t.Fatal("administrator setup was not completed")
+	}
+	if _, err := setup.DB.Users.GetByEmail(context.Background(), "no-twilio@example.com"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(cfg.TwilioEnvPath()); !os.IsNotExist(err) {
+		t.Fatal("setup created an empty credential file")
+	}
+	status := httptest.NewRecorder()
+	handler.GetSetupStatus(status, httptest.NewRequest(http.MethodGet, "/api/setup/status", nil))
+	if !strings.Contains(status.Body.String(), `"twilio_configured":false`) {
+		t.Fatal("setup misreported Twilio configuration")
+	}
+}

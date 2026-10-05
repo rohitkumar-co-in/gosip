@@ -16,6 +16,8 @@ services:
       GOSIP_HTTP_PORT: "8080"
       GOSIP_SIP_PORT: "5060"
       GOSIP_CORS_ORIGINS: ${GOSIP_CORS_ORIGINS}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
       TZ: ${TZ:-America/New_York}
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/health"]

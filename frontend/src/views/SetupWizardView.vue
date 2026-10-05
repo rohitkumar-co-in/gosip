@@ -22,8 +22,6 @@ onMounted(async () => {
 })
 
 const form = ref<SetupRequest>({
-  twilio_account_sid: '',
-  twilio_auth_token: '',
   admin_email: '',
   admin_password: '',
   smtp_host: '',
@@ -38,12 +36,6 @@ const confirmPassword = ref('')
 
 function nextStep() {
   if (step.value === 1) {
-    if (!twilioConfigured.value && (!form.value.twilio_account_sid || !form.value.twilio_auth_token)) {
-      error.value = 'Twilio credentials are required'
-      return
-    }
-  }
-  if (step.value === 2) {
     if (!form.value.admin_email || !form.value.admin_password) {
       error.value = 'Admin email and password are required'
       return
@@ -97,10 +89,15 @@ async function handleSubmit() {
         </p>
       </div>
 
+      <div class="rounded-md bg-gray-100 dark:bg-gray-800 px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+        <p v-if="twilioConfigured">Twilio is configured on the server.</p>
+        <p v-else>You can create your administrator account now. Twilio credentials can be configured on the server later.</p>
+      </div>
+
       <!-- Progress steps -->
       <div class="flex justify-center space-x-4">
         <div
-          v-for="s in 4"
+          v-for="s in 3"
           :key="s"
           :class="[
             'w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium',
@@ -115,42 +112,9 @@ async function handleSubmit() {
         {{ error }}
       </div>
 
-      <form @submit.prevent="step === 4 ? handleSubmit() : nextStep()" class="space-y-6">
-        <!-- Step 1: Twilio Credentials -->
+      <form @submit.prevent="step === 3 ? handleSubmit() : nextStep()" class="space-y-6">
+        <!-- Step 1: Admin Account -->
         <div v-if="step === 1" class="space-y-4">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white">Twilio Configuration</h3>
-          <p v-if="twilioConfigured" class="text-sm text-gray-500">Twilio credentials are already configured. Continue to create your administrator account.</p>
-          <p v-else class="text-sm text-gray-500">Enter your Twilio account credentials</p>
-
-          <div v-if="!twilioConfigured">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Account SID
-            </label>
-            <input
-              v-model="form.twilio_account_sid"
-              type="text"
-              required
-              class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-800 dark:text-white"
-              placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-            />
-          </div>
-
-          <div v-if="!twilioConfigured">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Auth Token
-            </label>
-            <input
-              v-model="form.twilio_auth_token"
-              type="password"
-              required
-              class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-800 dark:text-white"
-              placeholder="Your Twilio Auth Token"
-            />
-          </div>
-        </div>
-
-        <!-- Step 2: Admin Account -->
-        <div v-if="step === 2" class="space-y-4">
           <h3 class="text-lg font-medium text-gray-900 dark:text-white">Admin Account</h3>
           <p class="text-sm text-gray-500">Create your administrator account</p>
 
@@ -195,8 +159,8 @@ async function handleSubmit() {
           </div>
         </div>
 
-        <!-- Step 3: Email (Optional) -->
-        <div v-if="step === 3" class="space-y-4">
+        <!-- Step 2: Email (Optional) -->
+        <div v-if="step === 2" class="space-y-4">
           <h3 class="text-lg font-medium text-gray-900 dark:text-white">Email Notifications (Optional)</h3>
           <p class="text-sm text-gray-500">Configure SMTP for email notifications</p>
 
@@ -249,8 +213,8 @@ async function handleSubmit() {
           </div>
         </div>
 
-        <!-- Step 4: Push Notifications (Optional) -->
-        <div v-if="step === 4" class="space-y-4">
+        <!-- Step 3: Push Notifications (Optional) -->
+        <div v-if="step === 3" class="space-y-4">
           <h3 class="text-lg font-medium text-gray-900 dark:text-white">Push Notifications (Optional)</h3>
           <p class="text-sm text-gray-500">Configure Gotify for push notifications</p>
 
@@ -297,7 +261,7 @@ async function handleSubmit() {
             class="px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90 disabled:opacity-50"
           >
             <span v-if="loading">Setting up...</span>
-            <span v-else-if="step === 4">Complete Setup</span>
+            <span v-else-if="step === 3">Complete Setup</span>
             <span v-else>Next</span>
           </button>
         </div>

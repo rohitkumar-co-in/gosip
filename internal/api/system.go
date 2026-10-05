@@ -199,15 +199,16 @@ func (h *SystemHandler) SetupWizard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate required fields
+	// Twilio can be configured in the server environment after administrator setup.
+	credentialsProvided := req.TwilioAccountSID != "" || req.TwilioAuthToken != ""
 	if req.TwilioAccountSID == "" && req.TwilioAuthToken == "" {
 		req.TwilioAccountSID, req.TwilioAuthToken = h.deps.Config.TwilioCredentials()
 	}
 	var errors []FieldError
-	if req.TwilioAccountSID == "" {
+	if credentialsProvided && req.TwilioAccountSID == "" {
 		errors = append(errors, FieldError{Field: "twilio_account_sid", Message: "Twilio Account SID is required"})
 	}
-	if req.TwilioAuthToken == "" {
+	if credentialsProvided && req.TwilioAuthToken == "" {
 		errors = append(errors, FieldError{Field: "twilio_auth_token", Message: "Twilio Auth Token is required"})
 	}
 	if req.AdminEmail == "" {
@@ -225,13 +226,16 @@ func (h *SystemHandler) SetupWizard(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Keep Twilio credentials out of SQLite and database backups.
-	if err := h.deps.Config.SaveTwilioEnv(req.TwilioAccountSID, req.TwilioAuthToken); err != nil {
-		if stderrors.Is(err, config.ErrTwilioRuntimeManaged) {
-			WriteError(w, http.StatusBadRequest, ErrCodeBadRequest, "Twilio credentials are managed by runtime environment variables; update your deployment settings", nil)
+	if credentialsProvided {
+		if err := h.deps.Config.SaveTwilioEnv(req.TwilioAccountSID, req.TwilioAuthToken); err != nil {
+			if stderrors.Is(err, config.ErrTwilioRuntimeManaged) {
+				WriteError(w, http.StatusBadRequest, ErrCodeBadRequest, "Twilio credentials are managed by runtime environment variables; update your deployment settings", nil)
+				return
+			}
+			WriteError(w, http.StatusInternalServerError, ErrCodeInternal, "Unable to save Twilio credentials", nil)
 			return
 		}
-		WriteError(w, http.StatusInternalServerError, ErrCodeInternal, "Unable to save Twilio credentials", nil)
-		return
+
 	}
 
 	// Save SMTP settings if provided

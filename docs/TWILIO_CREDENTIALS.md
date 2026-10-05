@@ -3,8 +3,9 @@
 In Coolify, configure both TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN as runtime
 variables on the GoSIP application, then redeploy. Do not enable them as build
 arguments. GoSIP uses these values for both its Twilio API client and webhook
-signature validation. The setup wizard detects configured credentials and lets
-you create the administrator account without entering them again.
+signature validation. The setup wizard starts with the administrator account
+and never asks for Twilio credentials. You can finish setup before configuring
+Twilio on the server; the wizard reports whether credentials are configured.
 
 Explicit runtime credentials take precedence over file credentials. The web UI
 cannot change runtime-managed credentials; rotate them in Coolify and redeploy.
