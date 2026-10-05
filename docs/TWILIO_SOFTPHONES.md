@@ -53,6 +53,11 @@ root-only permissions. Export from Traefik's ACME storage with
 systemd timer to refresh them. The bridge reloads TLS when the certificate
 changes. The exporter never changes the Coolify proxy or its ACME storage.
 
+The TLS transport validates server certificates and allows wildcard names for
+Twilio's SIP certificate (`allow_wildcard_certs=yes`, `verify_server=yes`). In
+generated Asterisk configuration, escape SIP URI semicolons as `\;` so transport
+and secure-media parameters are not interpreted as comments.
+
 ## Twilio callbacks and routing
 
 Use POST callbacks on the canonical GoSIP URL:

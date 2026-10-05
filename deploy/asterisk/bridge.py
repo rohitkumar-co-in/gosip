@@ -97,6 +97,7 @@ priv_key_file=/certs/privkey.pem
 ca_list_file=/etc/ssl/certs/ca-certificates.crt
 method=tlsv1_2
 verify_server=yes
+allow_wildcard_certs=yes
 verify_client=no
 require_client_cert=no
 allow_reload=yes
@@ -132,7 +133,7 @@ dtmf_mode=rfc4733
 
 [twilio-out]
 type=aor
-contact=sip:{trunk_domain}:5061;transport=tls;secure=true
+contact=sip:{trunk_domain}:5061\\;transport=tls\\;secure=true
 
 [twilio-in-auth]
 type=auth

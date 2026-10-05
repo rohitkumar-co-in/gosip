@@ -97,6 +97,12 @@ def authenticated(method,user,to,body='',expiry=300,authuser=None,authpassword=N
     authorization=f'Authorization: Digest username="{authuser}", realm="{realm}", nonce="{nonce}", uri="{uri}", response="{digest}", algorithm=MD5, qop=auth, nc=00000001, cnonce="{cnonce}"\r\n'
     return request(method,user,to,body,authorization,expiry,2,callid)[0]
 try:
+    trunk=docker('exec',container,'asterisk','-rx','pjsip show aor twilio-out')
+    assert ';transport=tls;secure=true' in trunk, 'Twilio contact URI parameters were parsed as config comments'
+    transport=docker('exec',container,'asterisk','-rx','pjsip show transport tls')
+    assert re.search(r'allow_wildcard_certs\s*:\s*Yes',transport,re.I), 'Twilio wildcard certificate support missing'
+    assert re.search(r'verify_server\s*:\s*Yes',transport,re.I), 'Server certificate validation must stay enabled'
+    print('PASS Twilio TLS contact parameters and verified wildcard certificate configuration')
     head=authenticated('REGISTER',username,username)
     assert head.startswith('SIP/2.0 200'),head.splitlines()[0]
     print('PASS authenticated TLS registration with existing HA1 format')
