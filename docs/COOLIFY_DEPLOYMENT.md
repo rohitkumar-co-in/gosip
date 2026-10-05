@@ -199,3 +199,12 @@ Go tests passed for internal/config, internal/db, internal/api and internal/twil
 including credential persistence, failed migration retention, token rotation,
 webhook signatures and runtime credentials avoiding both SQLite and file copies.
 Frontend production type checking and build also passed.
+
+Credential-storage deployment feucfmi9oryrv3q27bkwavt6 completed successfully
+with code commit 48a7b941fd3976c509a47bc3437d8dcd4bdb2d10. The new container is
+healthy, uses the same production volume, and retains the verified database
+backup. Production HTTPS/frontend, TCP/UDP SIP OPTIONS and SQLite integrity
+checks passed. There are zero Twilio credential rows in the active database.
+Real Twilio credentials have not yet been configured; add both runtime variables
+in Coolify and redeploy. These checks verify storage/integration behavior, not
+live Twilio calling or message delivery.
