@@ -3,7 +3,7 @@ import {ref} from 'vue'
 import api from '@/api/client'
 import ConsoleDialog from './ConsoleDialog.vue'
 import {deleteHistoryBatch,type HistoryRecord,type HistoryScope,type HistoryResult} from '@/utils/bulk-history'
-const props=defineProps<{records:HistoryRecord[]}>()
+const props=defineProps<{records:HistoryRecord[];conversations?:string[];businessNumber?:string}>()
 const emit=defineEmits<{close:[];changed:[]}>()
 const pending=ref([...props.records]),scope=ref<HistoryScope>('local'),confirmed=ref(false),busy=ref(false),processed=ref(0),total=ref(0),deleted=ref(0),failures=ref<HistoryResult[]>([])
 async function remove(){
@@ -19,8 +19,9 @@ async function remove(){
 }
 </script>
 <template><ConsoleDialog label="Delete selected history" @close="!busy&&emit('close')"><form class="space-y-5" @submit.prevent="remove">
- <h2 class="text-xl">Delete {{pending.length}} selected records?</h2>
- <p class="text-sm">Only the selected messages and call records will be processed.</p>
+ <h2 class="text-xl">{{conversations?.length?'Delete '+conversations.length+' conversations?':'Delete '+pending.length+' selected records?'}}</h2>
+ <div v-if="conversations?.length" class="space-y-2 text-sm"><p>{{pending.length}} messages, including older history. Business number: {{businessNumber}}.</p><ul class="max-h-32 overflow-y-auto"><li v-for="number in conversations" :key="number">{{number}}</li></ul><p>Only the prepared messages in these conversations will be processed. Messages arriving afterward are kept.</p></div>
+ <p v-else class="text-sm">Only the selected messages and call records will be processed.</p>
  <label class="block text-sm">Delete from<select v-model="scope" :disabled="busy" class="block w-full border rounded p-3 mt-2" @change="confirmed=false"><option value="local">Dashboard only</option><option value="both">Dashboard and Twilio</option></select></label>
  <p class="text-sm">{{scope==='both'?'Selected records will be permanently removed from the dashboard and Twilio logs.':'Selected records will be removed from the dashboard. Twilio records remain and can be imported again.'}}</p>
  <p v-if="scope==='both'" class="text-sm">Message media is deleted with its Twilio message. Delivered phone messages, call recordings, transcriptions and other call legs are kept.</p>

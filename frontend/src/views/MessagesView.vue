@@ -9,12 +9,30 @@ const auth=useAuthStore()
 const deleting=ref<Message|null>(null)
 import BulkHistoryDeleteDialog from '@/components/BulkHistoryDeleteDialog.vue'
 import type {HistoryRecord} from '@/utils/bulk-history'
+import {collectConversationHistory} from '@/utils/bulk-history'
 const selectedMessages=ref<number[]>([]),bulkDeleting=ref<HistoryRecord[]|null>(null)
+const selectedConversations=ref<string[]>([]),preparingConversations=ref(false),deletingConversations=ref<string[]>([]),deletionBusinessNumber=ref('')
+const allConversationsSelected=computed(()=>conversations.value.length>0&&conversations.value.every(conv=>selectedConversations.value.includes(conv.phone_number)))
+function selectConversations(){selectedConversations.value=allConversationsSelected.value?[]:conversations.value.map(conv=>conv.phone_number)}
+async function deleteConversations(numbers:string[]){
+ if(preparingConversations.value||!numbers.length)return
+ const did=selectedDID.value
+ const selected=[...new Set(numbers)]
+ preparingConversations.value=true;error.value=null
+ try{
+  const records=await collectConversationHistory(selected,did,async(number,filter,offset,limit)=>(await api.get(`/messages/conversation/${encodeURIComponent(number)}`,{params:{did_id:filter,offset,limit}})).data)
+  if(!records.length){error.value='These conversations have no stored messages to delete.';return}
+  deletingConversations.value=selected
+  deletionBusinessNumber.value=did?(dids.value.find(item=>item.id===did)?.phone_number||'Selected business number'):'All business numbers'
+  bulkDeleting.value=records
+ }catch{error.value='Could not load the complete conversations. No messages were deleted. Try again.'}
+ finally{preparingConversations.value=false}
+}
 const allLoadedSelected=computed(()=>messages.value.length>0&&messages.value.every(message=>selectedMessages.value.includes(message.id)))
 function selectLoaded(){selectedMessages.value=allLoadedSelected.value?[]:messages.value.map(message=>message.id)}
-function deleteSelectedMessages(){bulkDeleting.value=messages.value.filter(message=>selectedMessages.value.includes(message.id)).map(message=>({...message,kind:'sms'}))}
-async function bulkChanged(){selectedMessages.value=[];await refreshMessages()}
-async function messageDeleted(){deleting.value=null;await refreshMessages()}
+function deleteSelectedMessages(){deletingConversations.value=[];bulkDeleting.value=messages.value.filter(message=>selectedMessages.value.includes(message.id)).map(message=>({...message,kind:'sms'}))}
+async function bulkChanged(){selectedMessages.value=[];selectedConversations.value=[];await refreshMessages();if(selectedConversation.value&&!messages.value.length&&!conversations.value.some(conv=>conv.phone_number===selectedConversation.value)){selectedConversation.value=null;messages.value=[];hasOlderMessages.value=false}}
+async function messageDeleted(){deleting.value=null;await bulkChanged()}
 
 interface Message {
   id: number
@@ -50,7 +68,7 @@ const dids = ref<{ id: number; phone_number: string; friendly_name: string }[]>(
 const selectedDID = ref<number>(0)
 const sendingDID = ref<number>(0)
 const recipient=ref('')
-watch(selectedDID,()=>{messageRequest++;selectedMessages.value=[];selectedConversation.value=null;messages.value=[];hasOlderMessages.value=false;sendingDID.value=selectedDID.value;loadConversations()})
+watch(selectedDID,()=>{messageRequest++;selectedMessages.value=[];selectedConversations.value=[];selectedConversation.value=null;messages.value=[];hasOlderMessages.value=false;sendingDID.value=selectedDID.value;loadConversations()})
 
 onMounted(async () => {
   await loadDIDs();await loadConversations()
@@ -71,7 +89,10 @@ async function loadConversations() {
   error.value = null
   try {
     const response = await api.get('/messages/conversations',{params:selectedDID.value?{did_id:selectedDID.value}:{}})
-    if (request === conversationRequest) conversations.value = response.data.data || []
+    if (request === conversationRequest) {
+      conversations.value = response.data.data || []
+      selectedConversations.value=selectedConversations.value.filter(number=>conversations.value.some(conv=>conv.phone_number===number))
+    }
   } catch {
     if (request === conversationRequest) error.value = 'Failed to load conversations'
   } finally {
@@ -146,7 +167,7 @@ const sortedMessages = computed(() => {
     <div class="flex justify-between items-center mb-4">
       <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Messages</h1>
       <button
-        @click="refreshMessages" aria-label="Refresh messages"
+        @click="refreshMessages" aria-label="Refresh messages" :disabled="preparingConversations"
         class="px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
       >
         <RefreshCw class="h-4 w-4" />
@@ -157,7 +178,7 @@ const sortedMessages = computed(() => {
       {{ error }}
     </div>
 
-    <div class="message-tools"><label class="text-sm">Business number<select v-model="selectedDID" class="ml-2 border rounded p-2"><option :value="0">All business numbers</option><option v-for="did in dids" :key="did.id" :value="did.id">{{did.phone_number}}</option></select></label><form @submit.prevent="/^\+[1-9][0-9]{7,14}$/.test(recipient)&&loadMessages(recipient)" class="new-conversation-form"><input v-model="recipient" aria-label="New conversation number" placeholder="+country-code-number" pattern="\+[1-9][0-9]{7,14}" required class="border rounded p-2 text-sm" /><button class="border rounded px-3 text-sm">New conversation</button></form></div>
+    <div class="message-tools"><label class="text-sm">Business number<select v-model="selectedDID" :disabled="preparingConversations" class="ml-2 border rounded p-2"><option :value="0">All business numbers</option><option v-for="did in dids" :key="did.id" :value="did.id">{{did.phone_number}}</option></select></label><form @submit.prevent="/^\+[1-9][0-9]{7,14}$/.test(recipient)&&loadMessages(recipient)" class="new-conversation-form"><input v-model="recipient" aria-label="New conversation number" placeholder="+country-code-number" pattern="\+[1-9][0-9]{7,14}" required class="border rounded p-2 text-sm" /><button :disabled="preparingConversations" class="border rounded px-3 text-sm">New conversation</button></form></div>
     <div class="messages-workspace flex bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
       <!-- Conversations List -->
       <div
@@ -168,6 +189,8 @@ const sortedMessages = computed(() => {
       >
         <div class="p-4 border-b border-gray-200 dark:border-gray-700">
           <h2 class="font-medium text-gray-900 dark:text-white">Conversations</h2>
+          <div v-if="auth.isAdmin&&conversations.length" class="mt-3 space-y-3"><label class="flex gap-2 items-center text-sm"><input type="checkbox" :checked="allConversationsSelected" :disabled="loading||preparingConversations" @change="selectConversations" />Select all conversations</label><button type="button" class="text-sm text-red-600 underline" :disabled="!selectedConversations.length||loading||preparingConversations" @click="deleteConversations(selectedConversations)">Delete selected conversations ({{selectedConversations.length}})</button></div>
+          <p v-if="preparingConversations" role="status" class="mt-3 text-sm">Loading complete conversation history…</p>
         </div>
 
         <div v-if="loading && !selectedConversation" class="p-4 text-gray-500">
@@ -175,15 +198,16 @@ const sortedMessages = computed(() => {
         </div>
 
         <div v-else class="flex-1 overflow-y-auto">
-          <button
+          <div
             v-for="conv in conversations"
             :key="conv.phone_number"
-            @click="loadMessages(conv.phone_number)"
             :class="[
               'w-full p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700',
               selectedConversation === conv.phone_number && 'bg-primary/5'
             ]"
           >
+            <div v-if="auth.isAdmin" class="flex flex-wrap gap-3 items-center mb-3"><label class="flex gap-2 items-center text-xs"><input v-model="selectedConversations" type="checkbox" :value="conv.phone_number" :disabled="preparingConversations" :aria-label="'Select conversation with '+conv.phone_number" />Select conversation</label><button type="button" class="text-xs text-red-600 underline" :disabled="preparingConversations||loading" @click="deleteConversations([conv.phone_number])">Delete conversation</button></div>
+            <button type="button" class="w-full text-left" :disabled="preparingConversations" @click="loadMessages(conv.phone_number)">
             <div class="flex flex-wrap gap-1 items-center justify-between">
               <span class="font-medium text-gray-900 dark:text-white">
                 {{ formatPhoneNumber(conv.phone_number) }}
@@ -203,7 +227,8 @@ const sortedMessages = computed(() => {
                 {{ conv.unread_count }}
               </span>
             </div>
-          </button>
+            </button>
+          </div>
 
           <div v-if="conversations.length === 0" class="p-4 text-center text-gray-500">
             No conversations yet
@@ -320,6 +345,6 @@ const sortedMessages = computed(() => {
       </div>
     </div>
     <HistoryDeleteDialog v-if="deleting" kind="sms" :id="deleting.id" :from="deleting.from_number" :to="deleting.to_number" @close="deleting=null" @deleted="messageDeleted" />
-    <BulkHistoryDeleteDialog v-if="bulkDeleting" :records="bulkDeleting" @close="bulkDeleting=null" @changed="bulkChanged" />
+    <BulkHistoryDeleteDialog v-if="bulkDeleting" :records="bulkDeleting" :conversations="deletingConversations" :business-number="deletionBusinessNumber" @close="bulkDeleting=null;deletingConversations=[]" @changed="bulkChanged" />
   </div>
 </template>

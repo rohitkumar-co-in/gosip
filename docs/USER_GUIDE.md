@@ -31,6 +31,14 @@ on this page** / **Select all loaded messages**, then click **Delete selected**.
 Load older messages first if you want to include them. Activity Log can select
 message records across conversations; Call History contains calls only.
 
+To delete whole chats with different numbers, use **Delete conversation** beside
+a conversation, or tick several conversation checkboxes and click **Delete
+selected conversations**. **Select all conversations** includes all chats in the
+current business-number filter. The app loads every older page before showing
+confirmation, so you do not need to open each chat or load its messages manually.
+Choose **All business numbers** to include those chats across your business
+numbers. Only the prepared messages are deleted; newly arriving messages remain.
+
 Review the selected records, choose **Dashboard only** or **Dashboard and Twilio**,
 tick the confirmation box, and submit. Bulk deletion shows progress, processes
 each selected record once, and reports failures individually. Keep the page open
