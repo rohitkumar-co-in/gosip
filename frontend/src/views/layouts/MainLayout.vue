@@ -54,7 +54,7 @@ async function handleLogout() {
   <div class="min-h-screen bg-background">
     <!-- Mobile sidebar -->
     <div v-if="sidebarOpen" class="fixed inset-0 z-40 lg:hidden">
-      <div class="fixed inset-0 bg-gray-600 bg-opacity-75" @click="sidebarOpen = false" />
+      <div class="fixed inset-0 bg-black/75" @click="sidebarOpen = false" />
       <div class="fixed inset-y-0 left-0 flex w-64 flex-col bg-white dark:bg-gray-800">
         <div class="flex h-16 items-center justify-between px-4">
           <span class="text-lg font-bold gradient-text">LEADOMI SIP</span>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ConsoleDialog from '@/components/ConsoleDialog.vue'
 import { ref, onMounted } from 'vue'
 import { Plus, Edit2, Trash2, RefreshCw, Shield, User } from 'lucide-vue-next'
 import api from '@/api/client'
@@ -46,12 +47,14 @@ async function loadUsers() {
 }
 
 function openCreateModal() {
+  error.value = null
   editingUser.value = null
   form.value = { email: '', name: '', password: '', role: 'admin' }
   showModal.value = true
 }
 
 function openEditModal(user: UserRecord) {
+  error.value = null
   editingUser.value = user
   form.value = {
     email: user.email,
@@ -108,7 +111,7 @@ function formatDate(dateStr: string | undefined): string {
 
 <template>
   <div>
-    <div class="flex justify-between items-center">
+    <div class="flex flex-wrap justify-between items-center gap-4">
       <div>
         <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Web console administrators</h1>
         <p class="mt-1 text-sm text-gray-500">
@@ -138,7 +141,7 @@ function formatDate(dateStr: string | undefined): string {
 
     <div v-if="loading" class="mt-6 text-gray-500">Loading...</div>
 
-    <div v-else class="mt-6 bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+    <div v-else class="mt-6 bg-white dark:bg-gray-800 shadow rounded-lg overflow-x-auto">
       <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
         <thead class="bg-gray-50 dark:bg-gray-700">
           <tr>
@@ -216,15 +219,11 @@ function formatDate(dateStr: string | undefined): string {
       </table>
     </div>
 
-    <div v-if="deleting" role="dialog" aria-modal="true" aria-labelledby="delete-admin-title" class="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"><div class="glass rounded-lg p-6 max-w-lg space-y-4"><h2 id="delete-admin-title" class="text-xl">Delete administrator {{deleting.email}}?</h2><p>This permanently removes this administrator and their console sessions. SIP phone accounts are managed separately.</p><div class="flex justify-end gap-3"><button @click="deleting=null" class="border rounded px-4 py-2">Cancel</button><button @click="handleDelete(deleting)" class="bg-red-700 text-white rounded px-4 py-2">Confirm delete</button></div></div></div>
+    <ConsoleDialog v-if="deleting" :label="`Delete administrator ${deleting.email}?`" @close="deleting=null"><div class="space-y-4"><h2 class="text-xl">Delete administrator {{deleting.email}}?</h2><p>This permanently removes this administrator and their console sessions. SIP phone accounts are managed separately.</p><div class="dialog-actions"><button @click="deleting=null" class="border rounded px-4 py-2">Cancel</button><button @click="handleDelete(deleting)" class="bg-red-700 text-white rounded px-4 py-2">Confirm delete</button></div></div></ConsoleDialog>
     <!-- Modal -->
-    <div v-if="showModal" class="fixed inset-0 z-50 overflow-y-auto">
-      <div class="flex items-center justify-center min-h-screen px-4">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75" @click="showModal = false" />
-
-        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+    <ConsoleDialog v-if="showModal" :label="editingUser ? 'Edit administrator' : 'Add administrator'" @close="!saving && (showModal=false)">
           <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
-            {{ editingUser ? 'Edit User' : 'Add administrator' }}
+            {{ editingUser ? 'Edit administrator' : 'Add administrator' }}
           </h3>
 
           <form @submit.prevent="handleSubmit" class="space-y-4"><p v-if="error" role="alert" class="text-red-500">{{error}}</p>
@@ -268,7 +267,7 @@ function formatDate(dateStr: string | undefined): string {
               </select>
             </div>
 
-            <div class="flex justify-end space-x-3 pt-4">
+            <div class="dialog-actions pt-4">
               <button
                 type="button"
                 @click="showModal = false"
@@ -285,8 +284,6 @@ function formatDate(dateStr: string | undefined): string {
               </button>
             </div>
           </form>
-        </div>
-      </div>
-    </div>
+    </ConsoleDialog>
   </div>
 </template>
