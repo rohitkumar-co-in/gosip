@@ -8,8 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/rohitkumar-co-in/gosip/internal/db"
-	"github.com/rohitkumar-co-in/gosip/pkg/sip"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/db"
+	"github.com/rohitkumar-co-in/leadomi-sip/pkg/sip"
 )
 
 // setupTLSTestAPI creates a test environment for TLS testing

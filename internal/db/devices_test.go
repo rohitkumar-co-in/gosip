@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/rohitkumar-co-in/gosip/internal/models"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/models"
 )
 
 func TestDeviceRepository_Create(t *testing.T) {

@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/rohitkumar-co-in/gosip/internal/models"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/models"
 )
 
 func TestDeviceHandler_List(t *testing.T) {

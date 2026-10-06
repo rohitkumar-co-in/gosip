@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rohitkumar-co-in/gosip/internal/models"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/models"
 )
 
 var ErrBlocklistEntryNotFound = errors.New("blocklist entry not found")

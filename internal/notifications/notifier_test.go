@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rohitkumar-co-in/gosip/internal/config"
-	"github.com/rohitkumar-co-in/gosip/internal/db"
-	"github.com/rohitkumar-co-in/gosip/internal/models"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/config"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/db"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/models"
 )
 
 // setupTestDB creates an in-memory SQLite database for testing

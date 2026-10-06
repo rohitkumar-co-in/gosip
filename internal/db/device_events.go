@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/rohitkumar-co-in/gosip/internal/models"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/models"
 )
 
 // DeviceEventRepository handles database operations for device events

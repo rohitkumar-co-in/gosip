@@ -14,7 +14,7 @@ import (
 
 	"github.com/caddyserver/certmagic"
 	"github.com/libdns/cloudflare"
-	"github.com/rohitkumar-co-in/gosip/internal/config"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/config"
 )
 
 // CertManager handles TLS certificate lifecycle management

@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/rohitkumar-co-in/gosip/internal/db"
-	"github.com/rohitkumar-co-in/gosip/internal/models"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/db"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/models"
 	qrcode "github.com/yeqown/go-qrcode/v2"
 	"github.com/yeqown/go-qrcode/writer/standard"
 	"golang.org/x/crypto/bcrypt"

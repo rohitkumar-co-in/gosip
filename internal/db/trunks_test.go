@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/rohitkumar-co-in/gosip/internal/models"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/models"
 )
 
 func createTestTrunk(t *testing.T, database *DB, twilioSID, friendlyName string) *models.Trunk {

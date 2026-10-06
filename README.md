@@ -68,7 +68,7 @@ Use manual paid call/SMS tests after changes and keep off-server backups.
 
 ## Development
 
-Backend module: `github.com/rohitkumar-co-in/gosip`. Use Go 1.26 with CGO and a C
+Backend module: `github.com/rohitkumar-co-in/leadomi-sip`. Use Go 1.26 with CGO and a C
 compiler/SQLite build dependencies. Frontend: Node 24 and pnpm 10.11.0.
 
 ```sh

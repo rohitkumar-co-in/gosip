@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rohitkumar-co-in/gosip/internal/config"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/config"
 )
 
 func TestInternalSiteNoIndex(t *testing.T) {

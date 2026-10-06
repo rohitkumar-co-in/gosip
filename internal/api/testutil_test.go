@@ -12,9 +12,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/rohitkumar-co-in/gosip/internal/db"
-	"github.com/rohitkumar-co-in/gosip/internal/models"
-	"github.com/rohitkumar-co-in/gosip/internal/twilio"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/db"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/models"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/twilio"
 )
 
 // MockTwilioClient is a mock implementation of TwilioClient for testing

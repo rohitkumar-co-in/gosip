@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rohitkumar-co-in/gosip/internal/models"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/models"
 )
 
 var e164Destination = regexp.MustCompile(`^\+[1-9][0-9]{7,14}$`)

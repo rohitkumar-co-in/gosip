@@ -1,4 +1,4 @@
-module github.com/rohitkumar-co-in/gosip
+module github.com/rohitkumar-co-in/leadomi-sip
 
 go 1.25.0
 

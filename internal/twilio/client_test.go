@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rohitkumar-co-in/gosip/internal/config"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/config"
 )
 
 func TestNewClient(t *testing.T) {

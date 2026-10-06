@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rohitkumar-co-in/gosip/internal/db"
-	"github.com/rohitkumar-co-in/gosip/pkg/sip"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/db"
+	"github.com/rohitkumar-co-in/leadomi-sip/pkg/sip"
 )
 
 // containsPathTraversal checks if a file path contains directory traversal sequences.

@@ -11,9 +11,9 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/rohitkumar-co-in/gosip/internal/config"
-	"github.com/rohitkumar-co-in/gosip/internal/models"
-	"github.com/rohitkumar-co-in/gosip/pkg/sip"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/config"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/models"
+	"github.com/rohitkumar-co-in/leadomi-sip/pkg/sip"
 )
 
 type businessTransport func(*http.Request) (*http.Response, error)

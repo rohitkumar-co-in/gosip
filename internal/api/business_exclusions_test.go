@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-chi/chi/v5"
-	"github.com/rohitkumar-co-in/gosip/internal/config"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/config"
 	"net/http"
 	"net/http/httptest"
 	"strings"

@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/rohitkumar-co-in/gosip/internal/db"
-	"github.com/rohitkumar-co-in/gosip/internal/models"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/db"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/models"
 )
 
 // Context keys

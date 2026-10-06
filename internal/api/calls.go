@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/rohitkumar-co-in/gosip/internal/audio"
-	"github.com/rohitkumar-co-in/gosip/pkg/sip"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/audio"
+	"github.com/rohitkumar-co-in/leadomi-sip/pkg/sip"
 )
 
 // CallHandler handles active call control API endpoints

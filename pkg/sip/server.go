@@ -10,8 +10,8 @@ import (
 
 	"github.com/emiago/sipgo"
 	"github.com/emiago/sipgo/sip"
-	"github.com/rohitkumar-co-in/gosip/internal/config"
-	"github.com/rohitkumar-co-in/gosip/internal/db"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/config"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/db"
 )
 
 // Config holds SIP server configuration

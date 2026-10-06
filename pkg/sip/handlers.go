@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/emiago/sipgo/sip"
-	"github.com/rohitkumar-co-in/gosip/internal/config"
-	"github.com/rohitkumar-co-in/gosip/internal/models"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/config"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/models"
 )
 
 // handleRegister processes REGISTER requests

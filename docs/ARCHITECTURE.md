@@ -20,7 +20,7 @@ per-user caller ID, private credential storage and offline SMS delivery state.
 Existing route edits and phone password resets do not change number webhooks.
 Only confirmed number assignment changes Twilio callback/application links.
 
-Go module identity is `github.com/rohitkumar-co-in/gosip`. Legacy standalone SIP,
+Go module identity is `github.com/rohitkumar-co-in/leadomi-sip`. Legacy standalone SIP,
 vendor provisioning, transfer/MOH and WebRTC source remains for compatibility
 or development and is not advertised as the supported Asterisk product.
 Runtime paths, environment keys, volume identities and SIP realm remain stable.

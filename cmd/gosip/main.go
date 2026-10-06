@@ -11,11 +11,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/rohitkumar-co-in/gosip/internal/api"
-	"github.com/rohitkumar-co-in/gosip/internal/config"
-	"github.com/rohitkumar-co-in/gosip/internal/db"
-	"github.com/rohitkumar-co-in/gosip/internal/twilio"
-	"github.com/rohitkumar-co-in/gosip/pkg/sip"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/api"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/config"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/db"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/twilio"
+	"github.com/rohitkumar-co-in/leadomi-sip/pkg/sip"
 )
 
 func main() {

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/rohitkumar-co-in/gosip/internal/models"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/models"
 )
 
 func TestMessageResponsePreservesTimestampInstant(t *testing.T) {

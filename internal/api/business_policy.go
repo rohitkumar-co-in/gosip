@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/rohitkumar-co-in/gosip/internal/db"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/db"
 	"net/http"
 	"regexp"
 	"strings"

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rohitkumar-co-in/gosip/internal/models"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/models"
 )
 
 func TestGetUserFromContext(t *testing.T) {

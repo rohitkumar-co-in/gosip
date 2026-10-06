@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rohitkumar-co-in/gosip/internal/db"
-	"github.com/rohitkumar-co-in/gosip/internal/models"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/db"
+	"github.com/rohitkumar-co-in/leadomi-sip/internal/models"
 )
 
 // Engine evaluates call routing rules and determines actions
