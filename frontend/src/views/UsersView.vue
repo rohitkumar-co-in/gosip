@@ -142,7 +142,7 @@ function formatDate(dateStr: string | undefined): string {
     <div v-if="loading" class="mt-6 text-gray-500">Loading...</div>
 
     <div v-else class="mt-6 bg-white dark:bg-gray-800 shadow rounded-lg overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+      <table class="responsive-table min-w-full divide-y divide-gray-200 dark:divide-gray-700">
         <thead class="bg-gray-50 dark:bg-gray-700">
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -164,7 +164,7 @@ function formatDate(dateStr: string | undefined): string {
         </thead>
         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
           <tr v-for="user in users" :key="user.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-            <td class="px-6 py-4 whitespace-nowrap">
+            <td data-label="User" class="px-6 py-4 whitespace-nowrap">
               <div class="flex items-center">
                 <div class="p-2 rounded-full bg-gray-100 dark:bg-gray-700">
                   <component
@@ -178,7 +178,7 @@ function formatDate(dateStr: string | undefined): string {
                 </div>
               </div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap">
+            <td data-label="Role" class="px-6 py-4 whitespace-nowrap">
               <span
                 :class="[
                   'inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium capitalize',
@@ -190,13 +190,13 @@ function formatDate(dateStr: string | undefined): string {
                 {{ user.role }}
               </span>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+            <td data-label="Created" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
               {{ formatDate(user.created_at) }}
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+            <td data-label="Last login" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
               {{ formatDate(user.last_login) }}
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+            <td data-label="Actions" class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
               <button
                 @click="openEditModal(user)"
                 :aria-label="`Edit administrator ${user.email}`"

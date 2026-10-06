@@ -114,7 +114,7 @@ const sortedMessages = computed(() => {
 </script>
 
 <template>
-  <div class="h-[calc(100vh-12rem)]">
+  <div class="messages-page">
     <div class="flex justify-between items-center mb-4">
       <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Messages</h1>
       <button
@@ -129,12 +129,12 @@ const sortedMessages = computed(() => {
       {{ error }}
     </div>
 
-    <div class="flex flex-wrap gap-3 mb-4"><label class="text-sm">Business number<select v-model="selectedDID" class="ml-2 border rounded p-2"><option v-for="did in dids" :key="did.id" :value="did.id">{{did.phone_number}}</option></select></label><form @submit.prevent="/^\+[1-9][0-9]{7,14}$/.test(recipient)&&loadMessages(recipient)" class="flex gap-2"><input v-model="recipient" aria-label="New conversation number" placeholder="+country-code-number" pattern="\+[1-9][0-9]{7,14}" required class="border rounded p-2 text-sm" /><button :disabled="!selectedDID" class="border rounded px-3 text-sm">New conversation</button></form></div>
-    <div class="flex h-full bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+    <div class="message-tools"><label class="text-sm">Business number<select v-model="selectedDID" class="ml-2 border rounded p-2"><option v-for="did in dids" :key="did.id" :value="did.id">{{did.phone_number}}</option></select></label><form @submit.prevent="/^\+[1-9][0-9]{7,14}$/.test(recipient)&&loadMessages(recipient)" class="new-conversation-form"><input v-model="recipient" aria-label="New conversation number" placeholder="+country-code-number" pattern="\+[1-9][0-9]{7,14}" required class="border rounded p-2 text-sm" /><button :disabled="!selectedDID" class="border rounded px-3 text-sm">New conversation</button></form></div>
+    <div class="messages-workspace flex bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
       <!-- Conversations List -->
       <div
         :class="[
-          'w-full md:w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col',
+          'conversation-list w-full md:w-72 lg:w-80 shrink-0 min-h-0 border-r border-gray-200 dark:border-gray-700 flex flex-col',
           selectedConversation ? 'hidden md:flex' : 'flex'
         ]"
       >
@@ -156,7 +156,7 @@ const sortedMessages = computed(() => {
               selectedConversation === conv.phone_number && 'bg-primary/5'
             ]"
           >
-            <div class="flex items-center justify-between">
+            <div class="flex flex-wrap gap-1 items-center justify-between">
               <span class="font-medium text-gray-900 dark:text-white">
                 {{ formatPhoneNumber(conv.phone_number) }}
               </span>
@@ -186,16 +186,16 @@ const sortedMessages = computed(() => {
       <!-- Messages View -->
       <div
         :class="[
-          'flex-1 flex flex-col',
+          'flex-1 min-w-0 min-h-0 flex flex-col',
           !selectedConversation ? 'hidden md:flex' : 'flex'
         ]"
       >
-        <div v-if="selectedConversation" class="flex flex-col h-full">
+        <div v-if="selectedConversation" class="flex flex-col h-full min-h-0">
           <!-- Header -->
           <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center">
             <button
               @click="selectedConversation = null" aria-label="Back to conversations"
-              class="md:hidden mr-3 p-1 text-gray-500 hover:text-gray-700"
+              class="md:hidden mr-3 p-3 text-gray-500 hover:text-gray-700"
             >
               <ArrowLeft class="h-5 w-5" />
             </button>
@@ -206,7 +206,7 @@ const sortedMessages = computed(() => {
           </div>
 
           <!-- Messages -->
-          <div class="flex-1 overflow-y-auto p-4 space-y-4">
+          <div class="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
             <div v-if="loading" class="text-center text-gray-500">Loading...</div>
 
             <div
@@ -219,13 +219,13 @@ const sortedMessages = computed(() => {
             >
               <div
                 :class="[
-                  'max-w-[70%] rounded-lg px-4 py-2',
+                  'message-bubble rounded-lg px-4 py-2',
                   message.direction === 'outbound'
                     ? 'bg-primary text-white'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
                 ]"
               >
-                <p class="whitespace-pre-wrap">{{ message.body }}</p>
+                <p class="whitespace-pre-wrap break-words">{{ message.body }}</p>
                 <div
                   v-if="message.media_urls?.length"
                   class="mt-2 space-y-2"
@@ -252,9 +252,9 @@ const sortedMessages = computed(() => {
 
           <!-- Input -->
           <div class="p-4 border-t border-gray-200 dark:border-gray-700">
-            <form @submit.prevent="sendMessage" class="flex space-x-2">
+            <form @submit.prevent="sendMessage" class="message-composer">
               <select
-                v-model="selectedDID"
+                v-model="selectedDID" aria-label="Send from business number"
                 class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white text-sm"
               >
                 <option v-for="did in dids" :key="did.id" :value="did.id">
@@ -262,7 +262,7 @@ const sortedMessages = computed(() => {
                 </option>
               </select>
               <input
-                v-model="newMessage"
+                v-model="newMessage" aria-label="Message text"
                 type="text"
                 placeholder="Type a message..."
                 class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"

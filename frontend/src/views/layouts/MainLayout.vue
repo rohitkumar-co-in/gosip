@@ -15,12 +15,26 @@ import {
   Menu,
   X
 } from 'lucide-vue-next'
-import { ref } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const sidebarOpen = ref(false)
+const drawer=ref<HTMLElement|null>(null),menuButton=ref<HTMLElement|null>(null)
+let previousOverflow=''
+watch(sidebarOpen,(open)=>{if(open){previousOverflow=document.body.style.overflow;document.body.style.overflow='hidden';drawer.value?.querySelector('button')?.focus()}else{document.body.style.overflow=previousOverflow;menuButton.value?.focus()}},{flush:'post'})
+function resize(){if(window.innerWidth>=1024)sidebarOpen.value=false}
+function drawerKey(event:KeyboardEvent){
+ if(event.key==='Escape'){sidebarOpen.value=false;return}
+ if(event.key!=='Tab')return
+ const controls=Array.from(drawer.value?.querySelectorAll<HTMLElement>('a[href],button:not(:disabled)')||[])
+ const first=controls[0],last=controls[controls.length-1]
+ if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus()}
+ else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus()}
+}
+onMounted(()=>window.addEventListener('resize',resize))
+onBeforeUnmount(()=>{window.removeEventListener('resize',resize);if(sidebarOpen.value)document.body.style.overflow=previousOverflow})
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -57,14 +71,14 @@ async function handleLogout() {
     <!-- Mobile sidebar -->
     <div v-if="sidebarOpen" class="fixed inset-0 z-40 lg:hidden">
       <div class="fixed inset-0 bg-black/75" @click="sidebarOpen = false" />
-      <div class="fixed inset-y-0 left-0 flex w-64 flex-col bg-white dark:bg-gray-800">
-        <div class="flex h-16 items-center justify-between px-4">
+      <div ref="drawer" role="dialog" aria-modal="true" aria-label="Navigation" @keydown="drawerKey" class="mobile-drawer fixed inset-y-0 left-0 flex w-64 flex-col bg-white dark:bg-gray-800">
+        <div class="flex h-16 shrink-0 items-center justify-between px-4">
           <span class="text-lg font-bold gradient-text">LEADOMI SIP</span>
-          <button @click="sidebarOpen = false" class="text-gray-500">
+          <button @click="sidebarOpen = false" aria-label="Close navigation" class="p-3 text-gray-500">
             <X class="h-6 w-6" />
           </button>
         </div>
-        <nav class="flex-1 space-y-1 px-2 py-4">
+        <nav class="min-h-0 flex-1 overflow-y-auto space-y-1 px-2 py-4">
           <RouterLink
             v-for="item in navigation"
             :key="item.name"
@@ -73,7 +87,7 @@ async function handleLogout() {
               isActive(item.href)
                 ? 'bg-primary/10 text-primary'
                 : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700',
-              'group flex items-center px-3 py-2 text-sm font-medium rounded-md'
+              'group flex items-center min-h-11 px-3 py-2 text-sm font-medium rounded-md'
             ]"
             @click="sidebarOpen = false"
           >
@@ -99,7 +113,7 @@ async function handleLogout() {
                 isActive(item.href)
                   ? 'bg-primary/10 text-primary'
                   : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700',
-                'group flex items-center px-3 py-2 text-sm font-medium rounded-md'
+                'group flex items-center min-h-11 px-3 py-2 text-sm font-medium rounded-md'
               ]"
               @click="sidebarOpen = false"
             >
@@ -114,16 +128,17 @@ async function handleLogout() {
             </RouterLink>
           </template>
         </nav>
+        <div class="shrink-0 border-t p-4 space-y-2"><p class="text-sm break-all">{{authStore.user?.email}}</p><button @click="sidebarOpen=false;handleLogout()" class="flex items-center gap-2 min-h-11 w-full text-gray-500"><LogOut class="h-5 w-5"/>Sign out</button></div>
       </div>
     </div>
 
     <!-- Desktop sidebar -->
     <div class="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
       <div class="flex min-h-0 flex-1 flex-col border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <div class="flex h-16 items-center px-4 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex h-16 shrink-0 items-center px-4 border-b border-gray-200 dark:border-gray-700">
           <span class="text-lg font-bold gradient-text">LEADOMI SIP</span>
         </div>
-        <nav class="flex-1 space-y-1 px-2 py-4">
+        <nav class="min-h-0 flex-1 overflow-y-auto space-y-1 px-2 py-4">
           <RouterLink
             v-for="item in navigation"
             :key="item.name"
@@ -132,7 +147,7 @@ async function handleLogout() {
               isActive(item.href)
                 ? 'bg-primary/10 text-primary'
                 : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700',
-              'group flex items-center px-3 py-2 text-sm font-medium rounded-md'
+              'group flex items-center min-h-11 px-3 py-2 text-sm font-medium rounded-md'
             ]"
           >
             <component
@@ -157,7 +172,7 @@ async function handleLogout() {
                 isActive(item.href)
                   ? 'bg-primary/10 text-primary'
                   : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700',
-                'group flex items-center px-3 py-2 text-sm font-medium rounded-md'
+                'group flex items-center min-h-11 px-3 py-2 text-sm font-medium rounded-md'
               ]"
             >
               <component
@@ -199,7 +214,7 @@ async function handleLogout() {
       <!-- Top bar -->
       <div class="sticky top-0 z-10 flex h-16 flex-shrink-0 bg-white dark:bg-gray-800 shadow lg:hidden">
         <button
-          @click="sidebarOpen = true"
+          ref="menuButton" @click="sidebarOpen = true" aria-label="Open navigation" :aria-expanded="sidebarOpen"
           class="px-4 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary"
         >
           <Menu class="h-6 w-6" />
@@ -211,7 +226,7 @@ async function handleLogout() {
       </div>
 
       <main class="py-6">
-        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="console-content mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <RouterView class="page-enter" />
         </div>
       </main>

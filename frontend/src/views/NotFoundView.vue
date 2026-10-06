@@ -14,9 +14,9 @@ function goHome() {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4">
+  <div class="public-page min-h-[100dvh] flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4">
     <div class="max-w-md w-full text-center">
-      <h1 class="text-9xl font-bold text-primary">404</h1>
+      <h1 class="text-7xl sm:text-9xl font-bold text-primary">404</h1>
       <h2 class="mt-4 text-2xl font-bold text-gray-900 dark:text-white">
         Page not found
       </h2>
@@ -24,7 +24,7 @@ function goHome() {
         Sorry, we couldn't find the page you're looking for.
       </p>
 
-      <div class="mt-8 flex justify-center space-x-4">
+      <div class="mt-8 flex flex-wrap justify-center gap-4">
         <button
           @click="goBack"
           class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
