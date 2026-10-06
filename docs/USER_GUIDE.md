@@ -26,8 +26,15 @@ Older records explicitly say when actor information was not captured.
 ## Delete history
 
 Administrators can use **Delete** in Messages or **Delete record** in Call History
-and Activity Log. Review the selected sender/recipient, choose **Dashboard only**
-or **Dashboard and Twilio**, tick the confirmation box, and submit.
+and Activity Log. For bulk deletion, select individual records or use **Select all
+on this page** / **Select all loaded messages**, then click **Delete selected**.
+Load older messages first if you want to include them. Activity Log can select
+message records across conversations; Call History contains calls only.
+
+Review the selected records, choose **Dashboard only** or **Dashboard and Twilio**,
+tick the confirmation box, and submit. Bulk deletion shows progress, processes
+each selected record once, and reports failures individually. Keep the page open
+until processing finishes. Retrying processes only the records that failed.
 
 Dashboard-only deletion keeps the Twilio record, which can be imported again.
 Deleting from both removes that specific Twilio resource and its dashboard row.

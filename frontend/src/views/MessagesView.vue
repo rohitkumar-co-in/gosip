@@ -7,6 +7,13 @@ import HistoryDeleteDialog from '@/components/HistoryDeleteDialog.vue'
 import {useAuthStore} from '@/stores/auth'
 const auth=useAuthStore()
 const deleting=ref<Message|null>(null)
+import BulkHistoryDeleteDialog from '@/components/BulkHistoryDeleteDialog.vue'
+import type {HistoryRecord} from '@/utils/bulk-history'
+const selectedMessages=ref<number[]>([]),bulkDeleting=ref<HistoryRecord[]|null>(null)
+const allLoadedSelected=computed(()=>messages.value.length>0&&messages.value.every(message=>selectedMessages.value.includes(message.id)))
+function selectLoaded(){selectedMessages.value=allLoadedSelected.value?[]:messages.value.map(message=>message.id)}
+function deleteSelectedMessages(){bulkDeleting.value=messages.value.filter(message=>selectedMessages.value.includes(message.id)).map(message=>({...message,kind:'sms'}))}
+async function bulkChanged(){selectedMessages.value=[];await refreshMessages()}
 async function messageDeleted(){deleting.value=null;await refreshMessages()}
 
 interface Message {
@@ -43,7 +50,7 @@ const dids = ref<{ id: number; phone_number: string; friendly_name: string }[]>(
 const selectedDID = ref<number>(0)
 const sendingDID = ref<number>(0)
 const recipient=ref('')
-watch(selectedDID,()=>{messageRequest++;selectedConversation.value=null;messages.value=[];hasOlderMessages.value=false;sendingDID.value=selectedDID.value;loadConversations()})
+watch(selectedDID,()=>{messageRequest++;selectedMessages.value=[];selectedConversation.value=null;messages.value=[];hasOlderMessages.value=false;sendingDID.value=selectedDID.value;loadConversations()})
 
 onMounted(async () => {
   await loadDIDs();await loadConversations()
@@ -78,7 +85,7 @@ async function loadMessages(phoneNumber: string, older = false) {
   const did = selectedDID.value
   const offset = older ? messages.value.length : 0
   if (older) loadingOlder.value = true
-  else { loading.value = true; loadingOlder.value = false; messages.value = []; hasOlderMessages.value = false }
+  else { selectedMessages.value=[];loading.value = true; loadingOlder.value = false; messages.value = []; hasOlderMessages.value = false }
   error.value = null
   selectedConversation.value = phoneNumber
   try {
@@ -227,6 +234,7 @@ const sortedMessages = computed(() => {
           </div>
 
           <!-- Messages -->
+          <div v-if="auth.isAdmin&&messages.length" class="p-3 border-b flex flex-wrap gap-3 items-center"><label class="flex gap-2 items-center text-sm"><input type="checkbox" :checked="allLoadedSelected" @change="selectLoaded" />Select all loaded messages</label><button type="button" class="text-sm text-red-600 underline" :disabled="!selectedMessages.length||loading||loadingOlder" @click="deleteSelectedMessages">Delete selected ({{selectedMessages.length}})</button></div>
           <div class="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
             <div v-if="hasOlderMessages" class="text-center"><button class="border rounded px-4 py-2 text-sm" :disabled="loadingOlder" @click="loadMessages(selectedConversation, true)">{{loadingOlder?'Loading older messages…':'Load older messages'}}</button></div>
             <div v-if="loading" class="text-center text-gray-500">Loading...</div>
@@ -268,7 +276,7 @@ const sortedMessages = computed(() => {
                 >
                   {{ formatTime(message.created_at) }} · {{message.status}}<br />{{message.from_number}} → {{message.to_number}}
                 </p>
-                <button v-if="auth.isAdmin" type="button" class="text-xs underline mt-2" :aria-label="'Delete message from '+message.from_number+' to '+message.to_number" @click="deleting=message">Delete</button>
+                <div v-if="auth.isAdmin" class="flex gap-3 items-center mt-2"><label class="flex gap-2 items-center text-xs"><input v-model="selectedMessages" type="checkbox" :value="message.id" :aria-label="'Select message '+message.id+' for deletion'" />Select</label><button type="button" class="text-xs underline" :aria-label="'Delete message from '+message.from_number+' to '+message.to_number" @click="deleting=message">Delete</button></div>
               </div>
             </div>
           </div>
@@ -312,5 +320,6 @@ const sortedMessages = computed(() => {
       </div>
     </div>
     <HistoryDeleteDialog v-if="deleting" kind="sms" :id="deleting.id" :from="deleting.from_number" :to="deleting.to_number" @close="deleting=null" @deleted="messageDeleted" />
+    <BulkHistoryDeleteDialog v-if="bulkDeleting" :records="bulkDeleting" @close="bulkDeleting=null" @changed="bulkChanged" />
   </div>
 </template>
