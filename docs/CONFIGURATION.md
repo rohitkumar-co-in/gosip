@@ -27,8 +27,10 @@ rebranding. Use the same public hostname for HTTPS and phone setup.
 | `TZ` | Operational timezone, e.g. `Asia/Kolkata` |
 
 Generate secrets privately, for example with `openssl rand -hex 24`.
-PBX credential values used in rendered Asterisk configuration must contain
-letters, digits, underscores, or hyphens. Keep incoming trunk and shared HTTP
+PBX usernames use letters, digits, underscores, or hyphens. Trunk passwords
+also support common punctuation (`@#!$%&*()+.,=:-`) up to 128 characters;
+spaces, semicolons, quotes, backslashes and line breaks are rejected to keep
+rendered Asterisk configuration safe. Keep incoming trunk and shared HTTP
 secrets distinct. The custom **phone** password accepts printable ASCII without
 spaces (12–72 characters), because only its digest hash enters Asterisk config.
 

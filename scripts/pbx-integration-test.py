@@ -52,7 +52,7 @@ class Backend(http.server.BaseHTTPRequestHandler):
         self.send_response(202);self.end_headers();self.wfile.write(b'{"id":99}')
 backend=http.server.ThreadingHTTPServer((gateway,18088),Backend)
 threading.Thread(target=backend.serve_forever,daemon=True).start()
-env={'GOSIP_PBX_SECRET':secret,'GOSIP_PBX_TRUNK_USER':'twilio-in','GOSIP_PBX_TRUNK_PASSWORD':secrets.token_hex(20),'PBX_DOMAIN':'sip.leadomi.com','PBX_PUBLIC_IP':'18.134.241.218','PBX_TWILIO_USER':'dummy','PBX_TWILIO_PASSWORD':'dummy','TWILIO_SIP_DOMAIN':'dummy.sip.twilio.com','GOSIP_OUTBOUND_CALLER_ID':'+441234567890','GOSIP_URL':'http://'+gateway+':18088','PBX_TWILIO_NETWORKS':'192.0.2.0/24'}
+env={'GOSIP_PBX_SECRET':secret,'GOSIP_PBX_TRUNK_USER':'twilio-in','GOSIP_PBX_TRUNK_PASSWORD':'Trunk@#'+secrets.token_hex(20),'PBX_DOMAIN':'sip.leadomi.com','PBX_PUBLIC_IP':'18.134.241.218','PBX_TWILIO_USER':'dummy','PBX_TWILIO_PASSWORD':'Provider@#'+secrets.token_hex(20),'TWILIO_SIP_DOMAIN':'dummy.sip.twilio.com','GOSIP_OUTBOUND_CALLER_ID':'+441234567890','GOSIP_URL':'http://'+gateway+':18088','PBX_TWILIO_NETWORKS':'192.0.2.0/24'}
 envpath=root/'test.env';envpath.write_text('\n'.join(k+'='+v for k,v in env.items())+'\n')
 env['PBX_TWILIO_DEVICE_PASSWORDS']=json.dumps({'testphone2':secrets.token_hex(20)})
 envpath.write_text('\n'.join(k+'='+v for k,v in env.items())+'\n')

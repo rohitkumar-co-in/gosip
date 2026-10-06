@@ -27,6 +27,9 @@ import urllib.request
 
 LOG = logging.getLogger("gosip-pbx")
 USERNAME = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+# Asterisk passwords are values, not section/endpoint names. Permit common
+# punctuation while rejecting comments, quotes, escapes and line injection.
+PASSWORD = re.compile(r"^[A-Za-z0-9_@#!$%&*()+.,=:-]{1,128}$")
 NUMBER = re.compile(r"^\+[1-9][0-9]{7,14}$")
 DB = os.getenv("GOSIP_DB", "/gosip/gosip.db")
 STATE = Path(os.getenv("PBX_STATE_DIR", "/var/lib/gosip-pbx"))
@@ -79,15 +82,15 @@ def render(devices, device_numbers=None):
     safe(DOMAIN, re.compile(r"^[a-zA-Z0-9.-]+$"))
     trunk_domain = safe(os.environ["TWILIO_SIP_DOMAIN"], re.compile(r"^[a-zA-Z0-9.-]+$"))
     trunk_user = safe(os.environ["PBX_TWILIO_USER"])
-    trunk_password = safe(os.environ["PBX_TWILIO_PASSWORD"])
+    trunk_password = safe(os.environ["PBX_TWILIO_PASSWORD"], PASSWORD)
     incoming_user = safe(os.environ["GOSIP_PBX_TRUNK_USER"])
-    incoming_password = safe(os.environ["GOSIP_PBX_TRUNK_PASSWORD"])
+    incoming_password = safe(os.environ["GOSIP_PBX_TRUNK_PASSWORD"], PASSWORD)
     device_numbers = device_numbers or {}
     device_passwords = json.loads(os.getenv("PBX_TWILIO_DEVICE_PASSWORDS") or "{}")
     credential_file = STATE / "credentials.json"
     if credential_file.exists():
         device_passwords.update(json.loads(credential_file.read_text()))
-    trunk_password = safe(device_passwords.get(trunk_user, trunk_password))
+    trunk_password = safe(device_passwords.get(trunk_user, trunk_password), PASSWORD)
     pjsip = f"""[global]
 type=global
 user_agent=Leadomi SIP-Asterisk
@@ -192,7 +195,7 @@ exten => _.,1,Hangup(21)
         outgoing = "twilio-out"
         if username in device_numbers and username != trunk_user:
             outgoing = f"twilio-out-{identifier}"
-            outgoing_password = safe(device_passwords[username])
+            outgoing_password = safe(device_passwords[username], PASSWORD)
             pjsip += f"""
 [{outgoing}-auth]
 type=auth
@@ -448,7 +451,7 @@ class HTTP(http.server.BaseHTTPRequestHandler):
                 raise ValueError('Invalid request size')
             request = json.loads(self.rfile.read(length))
             username = safe(request['username'])
-            password = safe(request['password'])
+            password = safe(request['password'], PASSWORD)
             if not 16 <= len(password) <= 128:
                 raise ValueError('Invalid credential')
             with source() as conn:
