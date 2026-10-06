@@ -1,8 +1,5 @@
 # Leadomi SIP security notes
 
-This filename is retained for existing links. It is a current implementation
-note, not a claim of independent certification or a comprehensive dated audit.
-
 The supported business console is administrator-only. Password changes revoke
 persisted/cached sessions. Mutating console origins are restricted. Twilio
 callbacks are signed; the private PBX bridge authenticates sender identities.
@@ -29,4 +26,4 @@ no monetary spending cap, external provider writes not transactional with DB,
 no complete detection of outbound-only number integrations, Android background
 reachability limitations. Keep OS/images patched and review Twilio usage.
 
-See [operations](docs/BUSINESS_OPERATIONS.md) and [backup](docs/BACKUP.md).
+See [operations](BUSINESS_OPERATIONS.md) and [backup](BACKUP.md).

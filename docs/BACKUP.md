@@ -33,8 +33,9 @@ delivery progress and dedicated outbound SIP credentials. Files are0600 and
 the directory0700. The dashboard records the last successful host backup.
 
 On-demand **Dashboard** database backups are separate and do not constitute a
-full host/PBX recovery archive. Legacy `backup.sh` helpers do not replace the
-business job described here.
+full host/PBX recovery archive. Use the business job described here for
+persistent database and PBX state. Source archives are documented separately
+in [source-only backups](SOURCE_BACKUP.md).
 
 ## Off-server protection
 

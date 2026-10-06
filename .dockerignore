@@ -25,3 +25,15 @@ coverage.html
 tmp
 .idea
 .vscode
+
+bin
+build
+dist
+**/__pycache__
+**/*.pyc
+frontend/vite.config.js
+frontend/vite.config.d.ts
+.claude
+.agents
+.serena
+source-archives

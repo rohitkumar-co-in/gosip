@@ -1,4 +1,4 @@
-# Claude Code configuration (private)
+# Private local tooling
 .claude/
 CLAUDE.md
 .mcp.json
@@ -48,8 +48,8 @@ __pycache__/
 
 # Environment
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 
 # Logs
 *.log
@@ -63,9 +63,6 @@ Thumbs.db
 /dist/
 /build/
 bin/
-tmp/
-
-# Air hot reload
 tmp/
 
 # Coverage
@@ -86,3 +83,6 @@ config.local.json
 
 skills-lock.json
 package-lock.json
+
+*.pyc
+/source-archives/

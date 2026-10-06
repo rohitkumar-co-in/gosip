@@ -78,7 +78,10 @@ pnpm install --frozen-lockfile
 pnpm build
 ```
 
-See [architecture](claudedocs/ARCHITECTURE.md) and
-[security notes](SECURITY_AUDIT_2026-05-06.md). Runtime `GOSIP_*` variable names,
+See [architecture](docs/ARCHITECTURE.md) and
+[security notes](docs/SECURITY.md). Runtime `GOSIP_*` variable names,
 the `gosip` SIP digest realm, binary paths, and existing volume names are retained
 for deployment compatibility; they are not the product brand.
+
+See [project structure and development](docs/PROJECT_STRUCTURE.md),
+[maintenance](docs/MAINTENANCE.md), and [source-only backups](docs/SOURCE_BACKUP.md).

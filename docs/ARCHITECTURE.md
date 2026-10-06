@@ -25,5 +25,5 @@ vendor provisioning, transfer/MOH and WebRTC source remains for compatibility
 or development and is not advertised as the supported Asterisk product.
 Runtime paths, environment keys, volume identities and SIP realm remain stable.
 
-See [configuration](../docs/CONFIGURATION.md),
-[API](../docs/API.md), [operations](../docs/BUSINESS_OPERATIONS.md).
+See [configuration](CONFIGURATION.md),
+[API](API.md), [operations](BUSINESS_OPERATIONS.md).

@@ -186,6 +186,9 @@ func TestMessageHandler_Send(t *testing.T) {
 	if resp.Direction != "outbound" {
 		t.Errorf("Expected direction 'outbound', got %s", resp.Direction)
 	}
+	if resp.Status != "queued" || resp.TwilioSID != "" {
+		t.Errorf("Accepted response must describe the queued submission, got status=%q SID=%q", resp.Status, resp.TwilioSID)
+	}
 }
 
 func TestMessageHandler_Send_ValidationError(t *testing.T) {

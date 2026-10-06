@@ -15,10 +15,9 @@ var ErrConfigNotFound = errors.New("config key not found")
 // SECURITY: ConfigRepository stores values as plaintext in SQLite.
 // Sensitive keys (smtp_password, gotify_token, etc.) are
 // readable by anyone with filesystem access to the DB file. Backups also
-// contain these in plaintext. Column-level AES-GCM encryption with the master
-// key is planned (claudedocs/SPEC_ADDENDUM_2026-05-07.md §10) but not yet
-// implemented. Until then: protect data/ permissions (0700) and never share
-// raw DB files.
+// contain these in plaintext. Column-level encryption is not implemented.
+// Protect data/ permissions (0700) and never share raw DB files. Twilio API
+// credentials are migrated out of SQLite into the runtime environment file.
 //
 // ConfigRepository handles database operations for system configuration.
 type ConfigRepository struct {

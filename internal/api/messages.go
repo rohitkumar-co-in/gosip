@@ -224,6 +224,9 @@ func (h *MessageHandler) Send(w http.ResponseWriter, r *http.Request) {
 		h.deps.DB.Conn().ExecContext(r.Context(), "UPDATE activity_actors SET actor=? WHERE kind='sms' AND record_id=?", actor, message.ID)
 	}
 
+	// Snapshot the accepted response before the sender updates its message.
+	// Provider completion is reported through subsequent history/status reads.
+	queuedResponse := toMessageResponse(message)
 	// Send via Twilio (async - queue for sending)
 	safeGo(func() {
 		// Use detached context with timeout to avoid context cancellation issues
@@ -247,7 +250,7 @@ func (h *MessageHandler) Send(w http.ResponseWriter, r *http.Request) {
 		}
 	})
 
-	WriteJSON(w, http.StatusAccepted, toMessageResponse(message))
+	WriteJSON(w, http.StatusAccepted, queuedResponse)
 }
 
 // Get returns a specific message

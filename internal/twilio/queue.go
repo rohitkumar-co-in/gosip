@@ -22,14 +22,15 @@ type QueuedMessage struct {
 
 // MessageQueue manages a queue of outbound messages with retry logic
 type MessageQueue struct {
-	client   *Client
-	messages chan *QueuedMessage
-	mu       sync.RWMutex
-	pending  map[string]*QueuedMessage
-	running  bool
-	stopOnce sync.Once
-	stopChan chan struct{}
-	wg       sync.WaitGroup
+	client    *Client
+	messages  chan *QueuedMessage
+	mu        sync.RWMutex
+	lifecycle sync.Mutex // Serialize worker creation, shutdown and restart.
+	pending   map[string]*QueuedMessage
+	running   bool
+	stopOnce  sync.Once
+	stopChan  chan struct{}
+	wg        sync.WaitGroup
 }
 
 // NewMessageQueue creates a new message queue
@@ -63,6 +64,8 @@ func (q *MessageQueue) Enqueue(msg *QueuedMessage) {
 
 // Start begins processing the queue
 func (q *MessageQueue) Start(ctx context.Context) {
+	q.lifecycle.Lock()
+	defer q.lifecycle.Unlock()
 	q.mu.Lock()
 	if q.running {
 		q.mu.Unlock()
@@ -101,6 +104,8 @@ func (q *MessageQueue) worker(ctx context.Context) {
 
 // Stop stops the queue processor
 func (q *MessageQueue) Stop() {
+	q.lifecycle.Lock()
+	defer q.lifecycle.Unlock()
 	q.mu.Lock()
 	if !q.running {
 		q.mu.Unlock()

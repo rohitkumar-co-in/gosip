@@ -11,5 +11,5 @@ Excluded product commitments: automatic number purchase, automatic takeover of
 other inbound integrations, Messaging Service policy changes, high availability,
 monetary spend caps, WebRTC/browser calling, conferencing/transfers, mobile MMS,
 read receipts and typing indicators. Existing phone identities and data survive
-rebranding. See [administrator guide](../docs/ADMINISTRATION.md) and
-[operations](../docs/BUSINESS_OPERATIONS.md) for practical limits.
+rebranding. See [administrator guide](ADMINISTRATION.md) and
+[operations](BUSINESS_OPERATIONS.md) for practical limits.

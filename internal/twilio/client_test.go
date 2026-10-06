@@ -660,6 +660,25 @@ func TestMessageQueue_StartIdempotent(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 }
 
+func TestMessageQueueConcurrentLifecycle(t *testing.T) {
+	queue := NewMessageQueue(NewClient(&config.Config{}))
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	var callers sync.WaitGroup
+	for i := 0; i < 8; i++ {
+		callers.Add(1)
+		go func() {
+			defer callers.Done()
+			for attempt := 0; attempt < 50; attempt++ {
+				queue.Start(ctx)
+				queue.Stop()
+			}
+		}()
+	}
+	callers.Wait()
+	queue.Stop()
+}
+
 func TestQueuedMessage(t *testing.T) {
 	callbackCalled := false
 	callback := func(sid string, err error) {

@@ -5,6 +5,12 @@ They do not advertise unfinished features retained in legacy source files.
 
 | Guide | Purpose |
 |---|---|
+| [Project structure](PROJECT_STRUCTURE.md) | Source layout and development commands |
+| [Source backup](SOURCE_BACKUP.md) | Reproducible source archives without builds or secrets |
+| [Architecture](ARCHITECTURE.md) | Implemented system boundaries |
+| [Maintenance](MAINTENANCE.md) | Verification and release procedure |
+| [Security](SECURITY.md) | Current security implementation and limits |
+| [Requirements](REQUIREMENTS.md) | Supported product scope |
 | [Installation](INSTALLATION.md) | Fresh VPS, Twilio SIP domain, first admin |
 | [Configuration](CONFIGURATION.md) | Environment, metadata, certificates, network |
 | [Coolify](COOLIFY_DEPLOYMENT.md) | Deploy and update safely |

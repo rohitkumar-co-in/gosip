@@ -16,5 +16,5 @@ feature. Preserve provider connections, phone passwords and existing volumes.
 5. Let the operator perform paid manual acceptance tests. Verify backups after
    deployment and keep external recovery copies. Document remaining limitations.
 
-See [Coolify](../docs/COOLIFY_DEPLOYMENT.md),
-[backups](../docs/BACKUP.md), [API](../docs/API.md).
+See [Coolify](COOLIFY_DEPLOYMENT.md),
+[backups](BACKUP.md), [API](API.md).
