@@ -378,6 +378,12 @@ def targets(conn, did):
 def enqueue(queue):
     with source() as conn:
         cursor = int(queue.execute("SELECT value FROM meta WHERE key='cursor'").fetchone()[0])
+        latest = conn.execute("SELECT COALESCE(MAX(id),0) FROM messages").fetchone()[0]
+        if latest < cursor:
+            # An emptied/restored inbox can reuse IDs. Resume from its beginning
+            # instead of silently waiting for it to reach the old high-water mark.
+            cursor = 0
+            LOG.info("Inbox message IDs restarted; resynchronizing SMS delivery")
         for msg in conn.execute("SELECT id,did_id,from_number,body,media_urls FROM messages WHERE direction='inbound' AND id>? ORDER BY id LIMIT 100", (cursor,)):
             body = msg["body"] or ""
             # Go marshals a nil media slice as JSON null for ordinary SMS.
@@ -385,7 +391,10 @@ def enqueue(queue):
                 body += "\n" + url
             if NUMBER.fullmatch(msg["from_number"]):
                 for username in targets(conn, msg["did_id"]):
-                    queue.execute("INSERT OR IGNORE INTO deliveries(message_id,username,sender,body) VALUES(?,?,?,?)",
+                    queue.execute("INSERT INTO deliveries(message_id,username,sender,body) VALUES(?,?,?,?) "
+                                  "ON CONFLICT(message_id,username) DO UPDATE SET "
+                                  "sender=excluded.sender,body=excluded.body,delivered=0 "
+                                  "WHERE deliveries.sender<>excluded.sender OR deliveries.body<>excluded.body",
                                   (msg["id"], username, msg["from_number"], body))
             cursor = msg["id"]
         queue.execute("UPDATE meta SET value=? WHERE key='cursor'", (str(cursor),))
