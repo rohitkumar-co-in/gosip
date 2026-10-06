@@ -1,0 +1,3 @@
+# Indexing is disabled by robots metadata on every console page.
+User-agent: *
+Disallow:

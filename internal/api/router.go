@@ -63,6 +63,12 @@ func NewRouter(deps *Dependencies) chi.Router {
 	}
 
 	// Health endpoints
+	// Let crawlers read the site-wide noindex response header; disallowing
+	// crawling would prevent search engines from discovering that directive.
+	r.Get("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		_, _ = w.Write([]byte("# Indexing is disabled by X-Robots-Tag on every response.\nUser-agent: *\nDisallow:\n"))
+	})
 	healthHandler := NewHealthHandler("0.1.0")
 	r.Get("/health", healthHandler.Health)
 	r.Get("/api/health", healthHandler.Health)

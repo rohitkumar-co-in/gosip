@@ -1,5 +1,12 @@
 # Leadomi SIP security notes
 
+All application responses, including API/auth failures and static assets, carry
+`X-Robots-Tag: noindex, nofollow`. The console HTML has matching robots metadata.
+`robots.txt` allows crawling so search engines can read these exclusion rules;
+blocking crawls would prevent discovery of `noindex`. These are search-engine
+directives; administrator authentication remains the access boundary. Existing
+search listings require recrawling before removal.
+
 The supported business console is administrator-only. Password changes revoke
 persisted/cached sessions. Mutating console origins are restricted. Twilio
 callbacks are signed; the private PBX bridge authenticates sender identities.

@@ -371,6 +371,8 @@ func isTrustedProxy(addr string) bool {
 func SecurityHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h := w.Header()
+		// This internal console and its API/assets must not enter search indexes.
+		h.Set("X-Robots-Tag", "noindex, nofollow")
 		h.Set("Content-Security-Policy",
 			"default-src 'self'; "+
 				"script-src 'self'; "+
