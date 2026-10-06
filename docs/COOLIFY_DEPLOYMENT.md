@@ -4,7 +4,7 @@
 
 Keep the existing Coolify application, service identifiers, persistent volumes,
 phone passwords, dedicated SIP domain, and assigned numbers. The repository is
-`https://github.com/rohitkumar-co-in/gosip`, branch `main`, Compose location
+`https://github.com/rohitkumar-co-in/leadomi-sip`, branch `main`, Compose location
 `/docker-compose.coolify.yml`. Branding does not require a new app or empty DB.
 
 Production origin: `https://sip.leadomi.com`. Existing volume

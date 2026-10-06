@@ -53,8 +53,8 @@ guarantee that the mounted SIP files were refreshed.
 For Coolify, follow its deployment guide. For direct Compose:
 
 ```sh
-git clone https://github.com/rohitkumar-co-in/gosip.git
-cd gosip
+git clone https://github.com/rohitkumar-co-in/leadomi-sip.git
+cd leadomi-sip
 cp .env.example .env
 # Edit .env privately before continuing.
 chmod 600 .env

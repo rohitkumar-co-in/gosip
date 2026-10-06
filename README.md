@@ -6,7 +6,7 @@ webhooks, SMS, administrator access, and persistent history. The Vue console
 uses Leadomi's charcoal/orange theme with locally hosted DM Sans, Syne, and
 JetBrains Mono fonts.
 
-Repository: https://github.com/rohitkumar-co-in/gosip
+Repository: https://github.com/rohitkumar-co-in/leadomi-sip
 
 ## What works
 
