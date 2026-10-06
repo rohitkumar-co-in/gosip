@@ -135,6 +135,9 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		deleteSessionWithDB(r.Context(), h.deps.DB, cookie.Value)
 	}
+	if authorization := r.Header.Get("Authorization"); strings.HasPrefix(authorization, "Bearer ") {
+		deleteSessionWithDB(r.Context(), h.deps.DB, strings.TrimPrefix(authorization, "Bearer "))
+	}
 
 	// Clear cookie
 	http.SetCookie(w, &http.Cookie{

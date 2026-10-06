@@ -118,7 +118,7 @@ const sortedMessages = computed(() => {
     <div class="flex justify-between items-center mb-4">
       <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Messages</h1>
       <button
-        @click="loadConversations"
+        @click="loadConversations" aria-label="Refresh messages"
         class="px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
       >
         <RefreshCw class="h-4 w-4" />
@@ -194,7 +194,7 @@ const sortedMessages = computed(() => {
           <!-- Header -->
           <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center">
             <button
-              @click="selectedConversation = null"
+              @click="selectedConversation = null" aria-label="Back to conversations"
               class="md:hidden mr-3 p-1 text-gray-500 hover:text-gray-700"
             >
               <ArrowLeft class="h-5 w-5" />
@@ -268,7 +268,7 @@ const sortedMessages = computed(() => {
                 class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
               />
               <button
-                type="submit"
+                type="submit" aria-label="Send message"
                 :disabled="sendingMessage || !newMessage.trim()"
                 class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 disabled:opacity-50"
               >

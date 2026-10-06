@@ -19,6 +19,7 @@ const error = ref<string | null>(null)
 const showModal = ref(false)
 const editingUser = ref<UserRecord | null>(null)
 const saving = ref(false)
+const deleting = ref<UserRecord | null>(null)
 
 const form = ref({
   email: '',
@@ -89,7 +90,7 @@ async function handleSubmit() {
 }
 
 async function handleDelete(user: UserRecord) {
-  if (!confirm(`Delete user "${user.email}"?\n\nThis action cannot be undone.`)) return
+  deleting.value = null
 
   try {
     await api.delete(`/users/${user.id}`)
@@ -116,7 +117,7 @@ function formatDate(dateStr: string | undefined): string {
       </div>
       <div class="flex space-x-2">
         <button
-          @click="loadUsers"
+          @click="loadUsers" aria-label="Refresh administrators"
           class="px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
         >
           <RefreshCw class="h-4 w-4" />
@@ -195,12 +196,14 @@ function formatDate(dateStr: string | undefined): string {
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
               <button
                 @click="openEditModal(user)"
+                :aria-label="`Edit administrator ${user.email}`"
                 class="text-primary hover:text-primary/80 mr-3"
               >
                 <Edit2 class="h-4 w-4" />
               </button>
               <button
-                @click="handleDelete(user)"
+                @click="deleting=user"
+                :aria-label="`Delete administrator ${user.email}`"
                 class="text-destructive hover:text-destructive/80"
                 :disabled="users.length === 1"
                 :class="users.length === 1 && 'opacity-50 cursor-not-allowed'"
@@ -213,6 +216,7 @@ function formatDate(dateStr: string | undefined): string {
       </table>
     </div>
 
+    <div v-if="deleting" role="dialog" aria-modal="true" aria-labelledby="delete-admin-title" class="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"><div class="glass rounded-lg p-6 max-w-lg space-y-4"><h2 id="delete-admin-title" class="text-xl">Delete administrator {{deleting.email}}?</h2><p>This permanently removes this administrator and their console sessions. SIP phone accounts are managed separately.</p><div class="flex justify-end gap-3"><button @click="deleting=null" class="border rounded px-4 py-2">Cancel</button><button @click="handleDelete(deleting)" class="bg-red-700 text-white rounded px-4 py-2">Confirm delete</button></div></div></div>
     <!-- Modal -->
     <div v-if="showModal" class="fixed inset-0 z-50 overflow-y-auto">
       <div class="flex items-center justify-center min-h-screen px-4">
@@ -223,13 +227,13 @@ function formatDate(dateStr: string | undefined): string {
             {{ editingUser ? 'Edit User' : 'Add administrator' }}
           </h3>
 
-          <form @submit.prevent="handleSubmit" class="space-y-4">
+          <form @submit.prevent="handleSubmit" class="space-y-4"><p v-if="error" role="alert" class="text-red-500">{{error}}</p>
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Email Address
               </label>
               <input
-                v-model="form.email"
+                v-model="form.email" aria-label="Email Address"
                 type="email"
                 required
                 class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
@@ -242,7 +246,7 @@ function formatDate(dateStr: string | undefined): string {
                 Password {{ editingUser ? '(leave blank to keep current)' : '' }}
               </label>
               <input
-                v-model="form.password"
+                v-model="form.password" aria-label="Password"
                 type="password"
                 :required="!editingUser"
                 minlength="12"
@@ -256,7 +260,7 @@ function formatDate(dateStr: string | undefined): string {
                 Role
               </label>
               <select
-                v-model="form.role"
+                v-model="form.role" aria-label="Role"
                 class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
               >
 

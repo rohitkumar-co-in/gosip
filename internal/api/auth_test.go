@@ -156,6 +156,26 @@ func TestAuthHandler_Login_InvalidJSON(t *testing.T) {
 	assertStatus(t, rr, http.StatusBadRequest)
 }
 
+func TestAuthHandler_LogoutRevokesBearerSession(t *testing.T) {
+	setup := setupTestAPI(t)
+	user := createTestUser(t, setup.DB, "logout@example.test", "unused", "admin")
+	token, err := createSessionWithRequest(context.Background(), setup.DB, user.ID, "regression", "127.0.0.1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = validateSession(context.Background(), setup.DB, token); err != nil {
+		t.Fatal(err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/logout", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	rr := httptest.NewRecorder()
+	NewAuthHandler(&Dependencies{DB: setup.DB}).Logout(rr, req)
+	assertStatus(t, rr, http.StatusOK)
+	if _, err = validateSession(context.Background(), setup.DB, token); err == nil {
+		t.Fatal("Bearer session survived logout")
+	}
+}
+
 func TestAuthHandler_Logout(t *testing.T) {
 	setup := setupTestAPI(t)
 	deps := &Dependencies{DB: setup.DB}
