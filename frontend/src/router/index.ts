@@ -61,6 +61,7 @@ const router = createRouter({
           name: 'call-control',
           redirect: '/devices'
         },
+        {path:'excluded-numbers',name:'excluded-numbers',component:()=>import('@/views/ExcludedNumbersView.vue'),meta:{adminOnly:true}},
         {path:'activity',name:'activity',component:()=>import('@/views/ActivityView.vue')},
         {
           path: 'messages',

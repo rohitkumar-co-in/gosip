@@ -78,12 +78,17 @@ type CreateRouteRequest struct {
 
 // Create creates a new route
 func (h *RouteHandler) Create(w http.ResponseWriter, r *http.Request) {
+	businessMu.Lock()
+	defer businessMu.Unlock()
 	var req CreateRouteRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		WriteValidationError(w, "Invalid request body", nil)
 		return
 	}
 
+	if !h.allowNumberChange(w, r, req.DIDID) {
+		return
+	}
 	// Validate
 	var errors []FieldError
 	if req.Name == "" {
@@ -155,6 +160,8 @@ type UpdateRouteRequest struct {
 
 // Update updates a route
 func (h *RouteHandler) Update(w http.ResponseWriter, r *http.Request) {
+	businessMu.Lock()
+	defer businessMu.Unlock()
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
 		WriteValidationError(w, "Invalid route ID", nil)
@@ -171,12 +178,18 @@ func (h *RouteHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !h.allowNumberChange(w, r, route.DIDID) {
+		return
+	}
 	var req UpdateRouteRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		WriteValidationError(w, "Invalid request body", nil)
 		return
 	}
 
+	if !h.allowNumberChange(w, r, req.DIDID) {
+		return
+	}
 	if req.Name != "" {
 		route.Name = req.Name
 	}
@@ -208,12 +221,22 @@ func (h *RouteHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 // Delete removes a route
 func (h *RouteHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	businessMu.Lock()
+	defer businessMu.Unlock()
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
 		WriteValidationError(w, "Invalid route ID", nil)
 		return
 	}
 
+	route, err := h.deps.DB.Routes.GetByID(r.Context(), id)
+	if err != nil {
+		WriteNotFoundError(w, "Route")
+		return
+	}
+	if !h.allowNumberChange(w, r, route.DIDID) {
+		return
+	}
 	if err := h.deps.DB.Routes.Delete(r.Context(), id); err != nil {
 		WriteInternalError(w)
 		return
@@ -229,12 +252,24 @@ type ReorderRequest struct {
 
 // Reorder updates the priority of multiple routes
 func (h *RouteHandler) Reorder(w http.ResponseWriter, r *http.Request) {
+	businessMu.Lock()
+	defer businessMu.Unlock()
 	var req ReorderRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		WriteValidationError(w, "Invalid request body", nil)
 		return
 	}
 
+	for id := range req.Priorities {
+		route, err := h.deps.DB.Routes.GetByID(r.Context(), id)
+		if err != nil {
+			WriteNotFoundError(w, "Route")
+			return
+		}
+		if !h.allowNumberChange(w, r, route.DIDID) {
+			return
+		}
+	}
 	if err := h.deps.DB.Routes.UpdatePriorities(r.Context(), req.Priorities); err != nil {
 		WriteInternalError(w)
 		return
@@ -330,4 +365,29 @@ func toRouteResponse(route *models.Route) *RouteResponse {
 		ActionData:    route.ActionData,
 		Enabled:       route.Enabled,
 	}
+}
+
+func (h *RouteHandler) allowNumberChange(w http.ResponseWriter, r *http.Request, didID *int64) bool {
+	entries, err := numberExclusions(r.Context(), h.deps.DB)
+	if err != nil {
+		WriteError(w, 503, "PROTECTION_UNAVAILABLE", "Number protection could not be loaded", nil)
+		return false
+	}
+	if len(entries) == 0 {
+		return true
+	}
+	if didID == nil {
+		WriteError(w, 409, "NUMBER_PROTECTED", "Global routing changes are blocked while numbers are excluded. Select an unprotected business number", nil)
+		return false
+	}
+	did, err := h.deps.DB.DIDs.GetByID(r.Context(), *didID)
+	if err != nil {
+		WriteNotFoundError(w, "Business number")
+		return false
+	}
+	if err = checkNumberProtection(r.Context(), h.deps.DB, did.Number); err != nil {
+		WriteError(w, 409, "NUMBER_PROTECTED", err.Error(), nil)
+		return false
+	}
+	return true
 }

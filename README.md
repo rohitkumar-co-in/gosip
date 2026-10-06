@@ -18,6 +18,8 @@ Repository: https://github.com/rohitkumar-co-in/gosip
   assignment review. Ordinary user edits preserve existing provider connections.
 - Read-only inventory and connection checks; no number purchase, porting, or
   automatic reassignment on startup, login, refresh, or deployment.
+- Persistent excluded-number protection with no force bypass, and deletion of
+  disabled SIP users while retaining numbers and historical records.
 - Password reset, user disabling, international destination restrictions,
   SMS submission limits, and two concurrent outbound calls per SIP user.
 - Administrator-only console, call/SMS activity log, voicemail, local call

@@ -115,6 +115,7 @@ func TestBusinessProvisioningLifecycle(t *testing.T) {
 		router.Post("/accounts", h.Provision)
 		router.Put("/accounts/{id}", h.Provision)
 		router.Post("/accounts/{id}/disable", h.Disable)
+		router.Delete("/accounts/{id}", h.Delete)
 		router.ServeHTTP(rec, req)
 		return rec
 	}
@@ -183,6 +184,21 @@ func TestBusinessProvisioningLifecycle(t *testing.T) {
 	if numberUpdated || credentialPassword != previousCredential {
 		t.Fatal("Phone password reset changed Twilio credentials")
 	}
+	assertStatus(t, invoke("DELETE", fmt.Sprintf("/accounts/%d", response.ID), ""), 409)
+	if err := setup.DB.Config.Set(ctx, "business_excluded_numbers", `[{"number":"+442345678901","reason":"Other service"}]`); err != nil {
+		t.Fatal(err)
+	}
+	protectedReview, err := h.reviewNumber(ctx, numbers[0])
+	if err != nil || !protectedReview.Blocked {
+		t.Fatal("Excluded review was not blocked")
+	}
+	assertStatus(t, invoke("PUT", fmt.Sprintf("/accounts/%d", response.ID), `{"name":"Protected","number":"+442345678901"}`), 409)
+	assertStatus(t, invoke("POST", fmt.Sprintf("/accounts/%d/disable", response.ID), ""), 409)
+	assertStatus(t, invoke("DELETE", fmt.Sprintf("/accounts/%d", response.ID), ""), 409)
+	if !credentialExists {
+		t.Fatal("Protected account credential changed")
+	}
+	setup.DB.Config.Set(ctx, "business_excluded_numbers", "[]")
 	failPBX = false
 	disabled := invoke("POST", fmt.Sprintf("/accounts/%d/disable", response.ID), "")
 	assertStatus(t, disabled, 200)
@@ -196,6 +212,33 @@ func TestBusinessProvisioningLifecycle(t *testing.T) {
 	if len(routes) != 1 || routes[0].Enabled {
 		t.Fatal("Disabled user still receives inbound calls/SMS")
 	}
+	// Deletion must fail closed while provider revocation cannot be verified.
+	workingClient := h.client
+	h.client = &http.Client{Transport: businessTransport(func(*http.Request) (*http.Response, error) { return nil, fmt.Errorf("offline") })}
+	assertStatus(t, invoke("DELETE", fmt.Sprintf("/accounts/%d", response.ID), ""), 502)
+	h.client = workingClient
+	assertStatus(t, invoke("DELETE", fmt.Sprintf("/accounts/%d", response.ID), ""), 200)
+	assertStatus(t, invoke("DELETE", fmt.Sprintf("/accounts/%d", response.ID), ""), 200)
+	var state, number, hash string
+	setup.DB.Conn().QueryRow("SELECT state,number FROM sip_accounts WHERE device_id=?", response.ID).Scan(&state, &number)
+	setup.DB.Conn().QueryRow("SELECT password_hash FROM devices WHERE id=?", response.ID).Scan(&hash)
+	if state != "deleted" || number != "" || hash != "" {
+		t.Fatal("Deletion left usable phone access or assignment")
+	}
+	if _, err = setup.DB.DIDs.GetByID(ctx, did.ID); err != nil {
+		t.Fatal("Deletion removed owned number")
+	}
+	assertStatus(t, invoke("PUT", fmt.Sprintf("/accounts/%d", response.ID), `{"name":"Resurrect","number":"+442345678901"}`), 404)
+	// A failed first provision may never have created an assignment map.
+	pending := &models.Device{Name: "Incomplete", Username: "incomplete", PasswordHash: sip.GenerateHA1("incomplete", "gosip", "synthetic-password"), DeviceType: "linphone"}
+	if err = setup.DB.Devices.Create(ctx, pending); err != nil {
+		t.Fatal(err)
+	}
+	setup.DB.Conn().Exec("INSERT INTO sip_accounts(device_id,state) VALUES(?,'error')", pending.ID)
+	setup.DB.Conn().Exec("DELETE FROM config WHERE key='pbx_device_numbers'")
+	assertStatus(t, invoke("POST", fmt.Sprintf("/accounts/%d/disable", pending.ID), ""), 200)
+	assertStatus(t, invoke("DELETE", fmt.Sprintf("/accounts/%d", pending.ID), ""), 200)
+
 }
 func TestBusinessConsoleBoundary(t *testing.T) {
 	for _, username := range []string{"twilio-in", "twilio-out-3", "global", "tls", "Twilio-out"} {

@@ -13,9 +13,14 @@ labels identify the receiving account; they are not read receipts or proof of
 who answered. Historical records without captured actor data stay unknown.
 
 Use **SIP Users** for [reviewed assignments](ADMINISTRATION.md), phone-password
-reset or disabling. Ready users edited with the same number retain their
+reset, disabling or deleting a disabled user. Ready users edited with the same number retain their
 Twilio credentials and number routes. Inventory/startup/login do not configure
 numbers. Never use re-provisioning as a substitute for reconnecting a phone.
+
+Use **Excluded numbers** to persistently protect another system's number from
+assignment and configuration changes. Adding protection preserves existing
+traffic; linked SIP edits, disabling/deletion and routing changes are blocked
+until the exclusion is explicitly removed. There is no force override.
 
 ## Usage and access controls
 

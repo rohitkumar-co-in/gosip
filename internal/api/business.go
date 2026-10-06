@@ -174,6 +174,15 @@ func (h *BusinessHandler) List(w http.ResponseWriter, r *http.Request) {
 		WriteInternalError(w)
 		return
 	}
+	protected, err := numberExclusions(r.Context(), h.deps.DB)
+	if err != nil {
+		WriteError(w, 503, "PROTECTION_UNAVAILABLE", "Number protection could not be loaded", nil)
+		return
+	}
+	locks := map[string]bool{}
+	for _, entry := range protected {
+		locks[entry.Number] = true
+	}
 	online := NewDeviceHandler(h.deps).pbxRegistrations(r)
 	result := []map[string]interface{}{}
 	for _, d := range devices {
@@ -184,7 +193,10 @@ func (h *BusinessHandler) List(w http.ResponseWriter, r *http.Request) {
 			WriteInternalError(w)
 			return
 		}
-		result = append(result, map[string]interface{}{"id": d.ID, "name": d.Name, "username": d.Username, "number": number, "state": state, "enabled": enabled, "online": enabled && online[d.ID]})
+		if state == "deleted" {
+			continue
+		}
+		result = append(result, map[string]interface{}{"id": d.ID, "name": d.Name, "username": d.Username, "number": number, "state": state, "enabled": enabled, "online": enabled && online[d.ID], "protected": locks[number]})
 	}
 	w.Header().Set("Cache-Control", "no-store")
 	WriteJSON(w, 200, map[string]interface{}{"data": result, "server": phoneServer(h.deps.Config.PBXSIPDomain), "proxy": "sip:" + phoneServer(h.deps.Config.PBXSIPDomain) + ":5061;transport=tls"})
@@ -312,6 +324,10 @@ func (h *BusinessHandler) Provision(w http.ResponseWriter, r *http.Request) {
 		WriteValidationError(w, "A name and an existing Twilio number in +country-code format are required", nil)
 		return
 	}
+	if err := checkNumberProtection(r.Context(), h.deps.DB, req.Number); err != nil {
+		WriteError(w, 409, "NUMBER_PROTECTED", err.Error(), nil)
+		return
+	}
 	if h.deps.Config.PBXURL == "" {
 		WriteError(w, 503, "PBX_UNAVAILABLE", "The PBX is not configured", nil)
 		return
@@ -331,6 +347,16 @@ func (h *BusinessHandler) Provision(w http.ResponseWriter, r *http.Request) {
 		device, err = h.deps.DB.Devices.GetByID(r.Context(), id)
 		if err != nil {
 			WriteNotFoundError(w, "SIP user")
+			return
+		}
+		var previousNumber, previousState string
+		h.deps.DB.Conn().QueryRowContext(r.Context(), "SELECT number,state FROM sip_accounts WHERE device_id=?", device.ID).Scan(&previousNumber, &previousState)
+		if previousState == "deleted" {
+			WriteNotFoundError(w, "SIP user")
+			return
+		}
+		if err := checkNumberProtection(r.Context(), h.deps.DB, previousNumber); err != nil {
+			WriteError(w, 409, "NUMBER_PROTECTED", err.Error(), nil)
 			return
 		}
 		req.Username = device.Username
@@ -611,6 +637,19 @@ func (h *BusinessHandler) Disable(w http.ResponseWriter, r *http.Request) {
 		WriteNotFoundError(w, "SIP user")
 		return
 	}
+	var linkedNumber, linkedState string
+	if err = h.deps.DB.Conn().QueryRowContext(r.Context(), "SELECT number,state FROM sip_accounts WHERE device_id=?", id).Scan(&linkedNumber, &linkedState); err != nil {
+		WriteInternalError(w)
+		return
+	}
+	if linkedState == "deleted" {
+		WriteNotFoundError(w, "SIP user")
+		return
+	}
+	if err = checkNumberProtection(r.Context(), h.deps.DB, linkedNumber); err != nil {
+		WriteError(w, 409, "NUMBER_PROTECTED", err.Error(), nil)
+		return
+	}
 	// Disable locally first, even if Twilio is unavailable. Retry revokes any
 	// remaining Twilio credential; history and the owned number are preserved.
 	tx, err := h.deps.DB.Conn().BeginTx(r.Context(), nil)
@@ -624,7 +663,9 @@ func (h *BusinessHandler) Disable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var raw string
-	if err = tx.QueryRowContext(r.Context(), "SELECT value FROM config WHERE key='pbx_device_numbers'").Scan(&raw); err != nil {
+	if err = tx.QueryRowContext(r.Context(), "SELECT value FROM config WHERE key='pbx_device_numbers'").Scan(&raw); err == sql.ErrNoRows {
+		raw = "{}"
+	} else if err != nil {
 		WriteInternalError(w)
 		return
 	}
@@ -633,9 +674,12 @@ func (h *BusinessHandler) Disable(w http.ResponseWriter, r *http.Request) {
 		WriteInternalError(w)
 		return
 	}
+	if assignments == nil {
+		assignments = map[string]string{}
+	}
 	delete(assignments, device.Username)
 	body, _ := json.Marshal(assignments)
-	if _, err = tx.ExecContext(r.Context(), "UPDATE config SET value=? WHERE key='pbx_device_numbers'", string(body)); err != nil {
+	if _, err = tx.ExecContext(r.Context(), "INSERT INTO config(key,value) VALUES('pbx_device_numbers',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", string(body)); err != nil {
 		WriteInternalError(w)
 		return
 	}

@@ -34,7 +34,22 @@ receive messages. A service using number-level inbound webhooks is retained.
 Inventory, startup, login and page refresh are read-only toward Twilio. Existing
 working users are imported without resetting passwords or number callbacks.
 
-## Edit, reset, reassign, disable
+## Excluded numbers
+
+Use **Excluded numbers** to protect a number belonging to another integration.
+Enter its international `+number` and an optional reason. The list is persistent
+and does not change current calls, SMS, credentials or callbacks. It may also
+contain numbers not currently owned, to protect future imports.
+
+Protected numbers are unavailable for assignment. The API also blocks edits,
+password resets, disabling/deleting linked SIP users and local route changes.
+There is no force bypass. Global routing changes are blocked while exclusions
+exist because they could affect protected numbers. Read-only inventory and
+connection checks remain available. Remove protection explicitly before making
+changes; removal itself does not reconfigure anything. Direct Twilio or host
+administrator changes are outside this console's protection.
+
+## Edit, reset, reassign, disable, delete
 
 **Edit / reset password** on a ready enabled user with the same number changes
 only the display name and an explicitly requested phone password. It preserves
@@ -51,6 +66,13 @@ number's local routes are replaced with the assigned-user default.
 credential. It retains history and the owned number; a call already in progress
 may continue. If remote revocation fails, retry Disable. A disabled user's
 number can later be explicitly assigned to a replacement user.
+
+After disabling, **Delete** removes the SIP user from the active list and clears
+its local assignment and phone password hash. Deletion verifies remote
+credential revocation first; provider failure pauses deletion for retry. It
+retains the owned Twilio number, its callbacks, historical user ID and call/SMS
+history. This is an archived local record, so its old username cannot be reused.
+It does not immediately terminate a call already in progress.
 
 An incomplete new account is marked `error` and cannot send calls/SMS until
 **Configure / retry** completes. External Twilio writes and SQLite cannot share

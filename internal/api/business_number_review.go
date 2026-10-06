@@ -34,6 +34,11 @@ func validPhonePassword(value string) bool {
 // External connections are never changed during inventory, review or startup.
 func (h *BusinessHandler) reviewNumber(ctx context.Context, n businessNumber) (numberReview, error) {
 	result := numberReview{Number: n.Number, Connections: []string{}}
+	if err := checkNumberProtection(ctx, h.deps.DB, n.Number); err != nil {
+		result.Blocked = true
+		result.Connections = append(result.Connections, err.Error())
+		return result, nil
+	}
 	for _, entry := range []struct{ label, value string }{{"Voice webhook", n.VoiceURL}, {"SMS webhook", n.SMSURL}, {"Call status callback", n.StatusURL}, {"Voice application", n.VoiceApplication}, {"SMS application", n.SMSApplication}} {
 		if entry.value != "" {
 			result.Connections = append(result.Connections, entry.label+": "+entry.value)
