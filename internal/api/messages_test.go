@@ -22,6 +22,55 @@ func TestMessageResponsePreservesTimestampInstant(t *testing.T) {
 	}
 }
 
+func TestMessageConversationAllNumbersAndOlderPages(t *testing.T) {
+	setup := setupTestAPI(t)
+	handler := NewMessageHandler(&Dependencies{DB: setup.DB})
+	first := createTestDID(t, setup.DB, "+15551234567")
+	second := createTestDID(t, setup.DB, "+15559999999")
+	peer := "+15559876543"
+	for i := 0; i < 55; i++ {
+		did := first
+		if i%2 != 0 {
+			did = second
+		}
+		createTestMessage(t, setup.DB, did.ID, "inbound", peer, "History")
+	}
+	// A message whose local number matches the peer belongs to another thread.
+	other := createTestMessage(t, setup.DB, first.ID, "outbound", "+15551111111", "Other thread")
+	if _, err := setup.DB.Conn().Exec("UPDATE messages SET from_number=? WHERE id=?", peer, other.ID); err != nil {
+		t.Fatal(err)
+	}
+	var ids = map[int64]bool{}
+	for page, expected := range []int{50, 5} {
+		path := "/api/messages/conversation/" + peer + "?did_id=0&offset=0"
+		if page == 1 {
+			path = "/api/messages/conversation/" + peer + "?did_id=0&offset=50"
+		}
+		rr := httptest.NewRecorder()
+		handler.GetConversation(rr, withURLParams(httptest.NewRequest("GET", path, nil), map[string]string{"number": peer}))
+		assertStatus(t, rr, 200)
+		var result struct {
+			Data    []MessageResponse `json:"data"`
+			HasMore bool              `json:"has_more"`
+		}
+		if err := json.Unmarshal(rr.Body.Bytes(), &result); err != nil {
+			t.Fatal(err)
+		}
+		if len(result.Data) != expected || result.HasMore != (page == 0) {
+			t.Fatalf("Wrong pagination: %s", rr.Body.String())
+		}
+		for _, message := range result.Data {
+			if ids[message.ID] || message.RemoteNumber != peer || message.FromNumber == "" || message.ToNumber == "" {
+				t.Fatal("Duplicate or unrelated message in history")
+			}
+			ids[message.ID] = true
+		}
+	}
+	if len(ids) != 55 {
+		t.Fatal("Older history was lost")
+	}
+}
+
 func TestConversationEncodedInternationalNumber(t *testing.T) {
 	setup := setupTestAPI(t)
 	handler := NewMessageHandler(&Dependencies{DB: setup.DB})

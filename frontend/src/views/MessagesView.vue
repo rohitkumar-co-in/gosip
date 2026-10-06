@@ -29,11 +29,16 @@ const loading = ref(true)
 const sendingMessage = ref(false)
 const error = ref<string | null>(null)
 const newMessage = ref('')
+const hasOlderMessages = ref(false)
+const loadingOlder = ref(false)
+let messageRequest = 0
+let conversationRequest = 0
 
 const dids = ref<{ id: number; phone_number: string; friendly_name: string }[]>([])
 const selectedDID = ref<number>(0)
+const sendingDID = ref<number>(0)
 const recipient=ref('')
-watch(selectedDID,()=>{selectedConversation.value=null;messages.value=[];loadConversations()})
+watch(selectedDID,()=>{messageRequest++;selectedConversation.value=null;messages.value=[];hasOlderMessages.value=false;sendingDID.value=selectedDID.value;loadConversations()})
 
 onMounted(async () => {
   await loadDIDs();await loadConversations()
@@ -43,48 +48,59 @@ async function loadDIDs() {
   try {
     const response = await api.get('/dids')
     dids.value = response.data.data || []
-    if (dids.value.length > 0) {
-      selectedDID.value = dids.value[0].id
-    }
   } catch {
     console.error('Failed to load DIDs')
   }
 }
 
 async function loadConversations() {
+  const request = ++conversationRequest
   loading.value = true
   error.value = null
   try {
-    const response = await api.get('/messages/conversations',{params:{did_id:selectedDID.value}})
-    conversations.value = response.data.data || []
+    const response = await api.get('/messages/conversations',{params:selectedDID.value?{did_id:selectedDID.value}:{}})
+    if (request === conversationRequest) conversations.value = response.data.data || []
   } catch {
-    error.value = 'Failed to load conversations'
+    if (request === conversationRequest) error.value = 'Failed to load conversations'
   } finally {
-    loading.value = false
+    if (request === conversationRequest) loading.value = false
   }
 }
 
-async function loadMessages(phoneNumber: string) {
-  loading.value = true
+async function loadMessages(phoneNumber: string, older = false) {
+  if (older && loadingOlder.value) return
+  const request = ++messageRequest
+  const did = selectedDID.value
+  const offset = older ? messages.value.length : 0
+  if (older) loadingOlder.value = true
+  else { loading.value = true; loadingOlder.value = false; messages.value = []; hasOlderMessages.value = false }
+  error.value = null
   selectedConversation.value = phoneNumber
   try {
-    const response = await api.get(`/messages/conversation/${encodeURIComponent(phoneNumber)}`,{params:{did_id:selectedDID.value}})
-    messages.value = response.data.data || []
+    const response = await api.get(`/messages/conversation/${encodeURIComponent(phoneNumber)}`,{params:{did_id:did,limit:50,offset}})
+    if (request !== messageRequest) return
+    messages.value = older ? [...messages.value, ...(response.data.data || [])] : (response.data.data || [])
+    hasOlderMessages.value = response.data.has_more === true
   } catch {
-    error.value = 'Failed to load messages'
+    if (request === messageRequest) error.value = 'Failed to load messages'
   } finally {
-    loading.value = false
+    if (request === messageRequest) { loading.value = false; loadingOlder.value = false }
   }
+}
+
+async function refreshMessages() {
+  await loadConversations()
+  if (selectedConversation.value) await loadMessages(selectedConversation.value)
 }
 
 async function sendMessage() {
-  if (!newMessage.value.trim() || !selectedConversation.value || !selectedDID.value) return
+  if (!newMessage.value.trim() || !selectedConversation.value || !sendingDID.value) return
 
   sendingMessage.value = true
   try {
     await api.post('/messages', {
       to_number: selectedConversation.value,
-      did_id: selectedDID.value,
+      did_id: sendingDID.value,
       body: newMessage.value
     })
     newMessage.value = ''
@@ -118,7 +134,7 @@ const sortedMessages = computed(() => {
     <div class="flex justify-between items-center mb-4">
       <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Messages</h1>
       <button
-        @click="loadConversations" aria-label="Refresh messages"
+        @click="refreshMessages" aria-label="Refresh messages"
         class="px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
       >
         <RefreshCw class="h-4 w-4" />
@@ -129,7 +145,7 @@ const sortedMessages = computed(() => {
       {{ error }}
     </div>
 
-    <div class="message-tools"><label class="text-sm">Business number<select v-model="selectedDID" class="ml-2 border rounded p-2"><option v-for="did in dids" :key="did.id" :value="did.id">{{did.phone_number}}</option></select></label><form @submit.prevent="/^\+[1-9][0-9]{7,14}$/.test(recipient)&&loadMessages(recipient)" class="new-conversation-form"><input v-model="recipient" aria-label="New conversation number" placeholder="+country-code-number" pattern="\+[1-9][0-9]{7,14}" required class="border rounded p-2 text-sm" /><button :disabled="!selectedDID" class="border rounded px-3 text-sm">New conversation</button></form></div>
+    <div class="message-tools"><label class="text-sm">Business number<select v-model="selectedDID" class="ml-2 border rounded p-2"><option :value="0">All business numbers</option><option v-for="did in dids" :key="did.id" :value="did.id">{{did.phone_number}}</option></select></label><form @submit.prevent="/^\+[1-9][0-9]{7,14}$/.test(recipient)&&loadMessages(recipient)" class="new-conversation-form"><input v-model="recipient" aria-label="New conversation number" placeholder="+country-code-number" pattern="\+[1-9][0-9]{7,14}" required class="border rounded p-2 text-sm" /><button class="border rounded px-3 text-sm">New conversation</button></form></div>
     <div class="messages-workspace flex bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
       <!-- Conversations List -->
       <div
@@ -207,6 +223,7 @@ const sortedMessages = computed(() => {
 
           <!-- Messages -->
           <div class="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+            <div v-if="hasOlderMessages" class="text-center"><button class="border rounded px-4 py-2 text-sm" :disabled="loadingOlder" @click="loadMessages(selectedConversation, true)">{{loadingOlder?'Loading older messages…':'Load older messages'}}</button></div>
             <div v-if="loading" class="text-center text-gray-500">Loading...</div>
 
             <div
@@ -244,7 +261,7 @@ const sortedMessages = computed(() => {
                     message.direction === 'outbound' ? 'text-white/70' : 'text-gray-500'
                   ]"
                 >
-                  {{ formatTime(message.created_at) }} · {{message.status}}
+                  {{ formatTime(message.created_at) }} · {{message.status}}<br />{{message.from_number}} → {{message.to_number}}
                 </p>
               </div>
             </div>
@@ -254,9 +271,10 @@ const sortedMessages = computed(() => {
           <div class="p-4 border-t border-gray-200 dark:border-gray-700">
             <form @submit.prevent="sendMessage" class="message-composer">
               <select
-                v-model="selectedDID" aria-label="Send from business number"
+                v-model="sendingDID" aria-label="Send from business number"
                 class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white text-sm"
               >
+                <option :value="0" disabled>Select sending number</option>
                 <option v-for="did in dids" :key="did.id" :value="did.id">
                   {{ did.friendly_name || formatPhoneNumber(did.phone_number) }}
                 </option>
@@ -269,7 +287,7 @@ const sortedMessages = computed(() => {
               />
               <button
                 type="submit" aria-label="Send message"
-                :disabled="sendingMessage || !newMessage.trim()"
+                :disabled="sendingMessage || !newMessage.trim() || !sendingDID"
                 class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 disabled:opacity-50"
               >
                 <Send class="h-4 w-4" />

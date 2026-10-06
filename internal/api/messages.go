@@ -30,6 +30,8 @@ type MessageResponse struct {
 	ID           int64    `json:"id"`
 	DIDID        int64    `json:"did_id"`
 	Direction    string   `json:"direction"`
+	FromNumber   string   `json:"from_number"`
+	ToNumber     string   `json:"to_number"`
 	RemoteNumber string   `json:"remote_number"`
 	Body         string   `json:"body"`
 	MediaURLs    []string `json:"media_urls,omitempty"`
@@ -309,7 +311,7 @@ func (h *MessageHandler) GetConversation(w http.ResponseWriter, r *http.Request)
 	}
 
 	didID, err := strconv.ParseInt(didIDStr, 10, 64)
-	if err != nil {
+	if err != nil || didID < 0 {
 		WriteValidationError(w, "Invalid did_id", nil)
 		return
 	}
@@ -339,18 +341,22 @@ func (h *MessageHandler) GetConversation(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	messages, err := h.deps.DB.Messages.GetConversation(r.Context(), didID, remoteNumber, limit, offset)
+	messages, err := h.deps.DB.Messages.GetConversation(r.Context(), didID, remoteNumber, limit+1, offset)
 	if err != nil {
 		WriteInternalError(w)
 		return
 	}
 
-	var response []*MessageResponse
+	hasMore := len(messages) > limit
+	if hasMore {
+		messages = messages[:limit]
+	}
+	response := []*MessageResponse{}
 	for _, m := range messages {
 		response = append(response, toMessageResponse(m))
 	}
 
-	WriteJSON(w, http.StatusOK, map[string]interface{}{"data": response})
+	WriteJSON(w, http.StatusOK, map[string]interface{}{"data": response, "has_more": hasMore, "offset": offset, "limit": limit})
 }
 
 // GetConversations returns a list of conversation summaries
@@ -563,6 +569,8 @@ func toMessageResponse(m *models.Message) *MessageResponse {
 		ID:           m.ID,
 		DIDID:        didID,
 		Direction:    m.Direction,
+		FromNumber:   m.FromNumber,
+		ToNumber:     m.ToNumber,
 		RemoteNumber: remoteNumber,
 		Body:         m.Body,
 		MediaURLs:    mediaURLs,

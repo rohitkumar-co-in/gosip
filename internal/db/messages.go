@@ -193,9 +193,10 @@ func (r *MessageRepository) GetConversation(ctx context.Context, didID int64, ph
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT id, message_sid, direction, from_number, to_number, did_id, body, media_urls, status, created_at, is_read
 		FROM messages
-		WHERE did_id = ? AND (from_number = ? OR to_number = ?)
-		ORDER BY created_at DESC LIMIT ? OFFSET ?
-	`, didID, phoneNumber, phoneNumber, limit, offset)
+		WHERE (? = 0 OR did_id = ?)
+		AND CASE WHEN direction = 'inbound' THEN from_number ELSE to_number END = ?
+		ORDER BY julianday(created_at) DESC, id DESC LIMIT ? OFFSET ?
+	`, didID, didID, phoneNumber, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -399,7 +400,7 @@ func (r *MessageRepository) GetConversationSummaries(ctx context.Context, didID 
 		rows, err = r.db.QueryContext(ctx, `
 			SELECT
 				CASE WHEN direction = 'inbound' THEN from_number ELSE to_number END as phone_number,
-				MAX(created_at) as last_message_at,
+				MAX(strftime('%Y-%m-%dT%H:%M:%fZ', created_at)) as last_message_at,
 				COUNT(*) as message_count,
 				SUM(CASE WHEN is_read = 0 AND direction = 'inbound' THEN 1 ELSE 0 END) as unread_count
 			FROM messages
@@ -411,7 +412,7 @@ func (r *MessageRepository) GetConversationSummaries(ctx context.Context, didID 
 		rows, err = r.db.QueryContext(ctx, `
 			SELECT
 				CASE WHEN direction = 'inbound' THEN from_number ELSE to_number END as phone_number,
-				MAX(created_at) as last_message_at,
+				MAX(strftime('%Y-%m-%dT%H:%M:%fZ', created_at)) as last_message_at,
 				COUNT(*) as message_count,
 				SUM(CASE WHEN is_read = 0 AND direction = 'inbound' THEN 1 ELSE 0 END) as unread_count
 			FROM messages
