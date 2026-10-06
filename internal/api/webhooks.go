@@ -103,7 +103,7 @@ func (h *WebhookHandler) VoiceStatus(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		cdr.Disposition = status
 		cdr.Duration = duration
-		if status == "completed" || status == "busy" || status == "no-answer" || status == "failed" {
+		if status == "completed" || status == "busy" || status == "no-answer" || status == "failed" || status == "canceled" {
 			now := time.Now()
 			cdr.EndedAt = &now
 		}

@@ -71,6 +71,20 @@ func TestSoftphoneOutboundRouting(t *testing.T) {
 			if test.accepted && !strings.Contains(rr.Body.String(), `callerId="+447575746354"`) {
 				t.Fatal("wrong caller ID")
 			}
+			if test.accepted {
+				cdr, err := setup.DB.CDRs.GetByCallSID(context.Background(), fields.Get("CallSid"))
+				if err != nil || cdr.Disposition != "ringing" {
+					t.Fatalf("Accepted call was not saved: %v", err)
+				}
+				status := httptest.NewRecorder()
+				h.VoiceStatus(status, signedSoftphoneRequest(cfg.PublicURL+"/api/webhooks/voice/status", url.Values{
+					"CallSid": {fields.Get("CallSid")}, "CallStatus": {"completed"}, "CallDuration": {"28"},
+				}))
+				cdr, err = setup.DB.CDRs.GetByCallSID(context.Background(), fields.Get("CallSid"))
+				if err != nil || cdr.Disposition != "completed" || cdr.Duration != 28 || cdr.EndedAt == nil {
+					t.Fatalf("Completed call history was not updated: %v", err)
+				}
+			}
 		})
 	}
 	rr := httptest.NewRecorder()
