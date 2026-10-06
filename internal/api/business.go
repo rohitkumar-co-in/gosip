@@ -81,7 +81,7 @@ func (h *BusinessHandler) twilio(ctx context.Context, method, path string, form 
 	}
 	defer res.Body.Close()
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		return fmt.Errorf("Twilio rejected the request (HTTP %d)", res.StatusCode)
+		return &twilioHTTPError{Status: res.StatusCode}
 	}
 	if result != nil {
 		return json.NewDecoder(io.LimitReader(res.Body, 4<<20)).Decode(result)

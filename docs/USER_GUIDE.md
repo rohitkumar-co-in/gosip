@@ -11,9 +11,10 @@
   handled only by confirmed assignment, not by browsing this screen.
 - **Call History / Activity Log**: paginated call/SMS records with who, direction,
   from/to, status and time. Saved actor labels stay stable on later reassignment.
-- **Messages**: select a business number, select or start a conversation using
-  an international `+number`, and send SMS. Status is submission/delivery status,
-  not a read receipt. Refresh to fetch new provider updates.
+- **Messages**: view all business numbers or filter one number, load older
+  messages, and select a sending number for replies. Start a conversation using
+  an international `+number`. Status is submission/delivery status, not a read
+  receipt. Refresh reloads locally stored history.
 - **Voicemails**: available recordings, duration and provider transcripts.
 - **Settings**: your administrator password and outgoing usage policies.
 - **Administrators**: trusted web accounts, separate from phone users.
@@ -21,6 +22,24 @@
 All web administrators can see business-wide history. Phone users only need
 their phone account. Times in Activity Log use the viewing device's timezone.
 Older records explicitly say when actor information was not captured.
+
+## Delete history
+
+Administrators can use **Delete** in Messages or **Delete record** in Call History
+and Activity Log. Review the selected sender/recipient, choose **Dashboard only**
+or **Dashboard and Twilio**, tick the confirmation box, and submit.
+
+Dashboard-only deletion keeps the Twilio record, which can be imported again.
+Deleting from both removes that specific Twilio resource and its dashboard row.
+Active records are blocked. If Twilio verification or deletion fails, local
+history is kept. Administrator deletions are recorded in the audit log.
+
+Twilio message deletion also removes associated media; it does not recall an SMS
+from a recipient's phone. Call-record deletion keeps recordings, transcriptions,
+and other call legs. Existing backups remain unchanged. See Twilio's
+[message deletion](https://www.twilio.com/docs/messaging/api/message-resource#delete-a-message-resource)
+and [call deletion](https://www.twilio.com/docs/voice/api/call-resource#delete-a-call)
+documentation for provider retention details.
 
 ## Android phone
 

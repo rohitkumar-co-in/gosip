@@ -3,6 +3,11 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { MessageSquare, Send, RefreshCw, ArrowLeft } from 'lucide-vue-next'
 import api from '@/api/client'
 import {dateTime} from '@/utils/display'
+import HistoryDeleteDialog from '@/components/HistoryDeleteDialog.vue'
+import {useAuthStore} from '@/stores/auth'
+const auth=useAuthStore()
+const deleting=ref<Message|null>(null)
+async function messageDeleted(){deleting.value=null;await refreshMessages()}
 
 interface Message {
   id: number
@@ -263,6 +268,7 @@ const sortedMessages = computed(() => {
                 >
                   {{ formatTime(message.created_at) }} · {{message.status}}<br />{{message.from_number}} → {{message.to_number}}
                 </p>
+                <button v-if="auth.isAdmin" type="button" class="text-xs underline mt-2" :aria-label="'Delete message from '+message.from_number+' to '+message.to_number" @click="deleting=message">Delete</button>
               </div>
             </div>
           </div>
@@ -305,5 +311,6 @@ const sortedMessages = computed(() => {
         </div>
       </div>
     </div>
+    <HistoryDeleteDialog v-if="deleting" kind="sms" :id="deleting.id" :from="deleting.from_number" :to="deleting.to_number" @close="deleting=null" @deleted="messageDeleted" />
   </div>
 </template>
